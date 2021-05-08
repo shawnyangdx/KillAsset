@@ -1,4 +1,8 @@
+obj/
+.vs/
 Temp/
 Logs/
 Library/
 *.meta
+*.csproj
+*.sln
