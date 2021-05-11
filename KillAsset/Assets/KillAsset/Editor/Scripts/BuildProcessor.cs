@@ -11,20 +11,17 @@ namespace KA
 
         public void OnPostprocessBuild(BuildReport report)
         {
-            for (int i = 0; i < report.files.Length; i++)
-            {
-                Debug.Log(report.files[i]);
-            }
+            SerializeBuildInfo.Inst.OnPostprocessBuild(report);
         }
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            Debug.Log(report.summary.outputPath);
-            Debug.Log(report.summary.platform);
+            SerializeBuildInfo.Inst.OnPreprocessBuild(report);
         }
 
         public void OnProcessScene(Scene scene, BuildReport report)
         {
+            SerializeBuildInfo.Inst.OnProcessScene(scene);
         }
     }
 }
