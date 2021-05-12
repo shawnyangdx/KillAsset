@@ -30,12 +30,8 @@ namespace KA
 		public TreeModel (IList<T> data, T root = null)
 		{
             if(root != null)
-            {
-                root.name = "Root";
-                root.id = 0;
-                root.depth = -1;
                 data.Insert(0, root);
-            }
+
 			SetData (data);
 		}
 

@@ -3,18 +3,22 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.SceneManagement;
+using System.IO;
+using UnityEngine;
 
 namespace KA
 {
     public enum AssetType
     {
-        InValid = -1,
-        Scene,
+        None = 0,
+        Scene = 1,
+        Prefab = 2,
     }
 
     [Serializable]
     public class AssetTreeElement : TreeElement
     {
+        [SerializeField] protected int m_assetType;
         public static AssetTreeElement CreateRoot()
         {
             AssetTreeElement element = new AssetTreeElement();
@@ -24,18 +28,16 @@ namespace KA
             return element;
         }
 
-        public virtual AssetType GetAssetType() { return AssetType.InValid; }
+        public AssetType GetAssetType() { return (AssetType)m_assetType; }
 
-        public virtual string Path { get; }
-
-        public List<string> GetDependencies()
+        public List<AssetTreeElement> GetDependencies()
         {
             return dependencies;
         }
 
         public virtual void CollectDependicies() { }
 
-        public List<string> dependencies = new List<string>();
+        public List<AssetTreeElement> dependencies = new List<AssetTreeElement>();
     }
 
     public class SceneAssetItem : AssetTreeElement
@@ -43,20 +45,15 @@ namespace KA
         public SceneAssetItem(Scene scene) : base()
         {
             this._scene = scene;
-            name = _scene.name;
+            id = SerializeBuildInfo.Inst.BuildID;
+            depth = 0;
+            name =  _scene.name;
+            m_assetType = (int)AssetType.Scene;
         }
-
-        public override AssetType GetAssetType()
-        {
-            return AssetType.Scene;
-        }
-
-        public override string Path => _scene.path;
-
 
         public override void CollectDependicies()
         {
-            dependencies = AssetDatabase.GetDependencies(this._scene.path, true).ToList();
+            dependencies = AssetTreeHelper.CollectAssetTreeElement(_scene.path, this.depth);
         }
 
         Scene _scene;

@@ -56,7 +56,6 @@ namespace KA
 
 		protected override TreeViewItem BuildRoot()
 		{
-            Debug.Log("BuildRoot");
             int depthForHiddenRoot = -1;
 			return new TreeViewItem<T>(m_TreeModel.root.id, depthForHiddenRoot, m_TreeModel.root.name, m_TreeModel.root);
 		}
@@ -98,7 +97,7 @@ namespace KA
 
 				if (child.hasChildren)
 				{
-					if (IsExpanded(child.id))
+                    if (IsExpanded(child.id))
 					{
 						AddChildrenRecursive (child, depth + 1, newRows);
 					}

@@ -55,14 +55,7 @@ namespace KA
                 }
 
                 SerializeBuildInfo.Inst.Serialize(selectedFile);
-                if (_treeView == null)
-                {
-                    var root = AssetTreeElement.CreateRoot();
-                    var treeModel = new TreeModel<AssetTreeElement>(SerializeBuildInfo.Inst.sceneAssets, root);
-                    _treeView = new AssetTreeView(_treeviewState, treeModel);
-                }
-
-                _treeView.Reload();
+                InitIfNeeded();
             }
 
             if (GUILayout.Button("Build"))
@@ -89,17 +82,119 @@ namespace KA
             if (_treeView == null)
                 return;
 
+            _treeView.searchString = _SearchField.OnGUI(GetSearchRect(), _treeView.searchString);
             _treeView.OnGUI(GetTreeViewRect());
         }
 
-
+        private Rect GetSearchRect()
+        {
+            return new Rect(10, 20, position.width - 20, 30);
+        }
         private Rect GetTreeViewRect()
         {
-            return new Rect(10, 30, position.width - 20, position.height - 10);
+            return new Rect(10, 40, position.width - 20, position.height - 60);
         }
 
+        void InitIfNeeded()
+        {
+            if (!m_Initialized)
+            {
+                // Check if it already exists (deserialized from window layout file or scriptable object)
+                if (_treeviewState == null)
+                    _treeviewState = new TreeViewState();
+
+                bool firstInit = m_MultiColumnHeaderState == null;
+                var headerState = AssetTreeView.CreateDefaultMultiColumnHeaderState(GetTreeViewRect().width);
+                if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
+                    MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
+                m_MultiColumnHeaderState = headerState;
+
+                var multiColumnHeader = new MyMultiColumnHeader(headerState);
+                if (firstInit)
+                    multiColumnHeader.ResizeToFit();
+
+                var root = AssetTreeElement.CreateRoot();
+                var treeModel = new TreeModel<AssetTreeElement>(SerializeBuildInfo.Inst.useList, root);
+
+                _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
+                _treeView.Reload();
+                _SearchField = new SearchField();
+                //_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
+
+                m_Initialized = true;
+            }
+        }
+
+        private bool m_Initialized = false;
+        [SerializeField] MultiColumnHeaderState m_MultiColumnHeaderState;
         private AssetTreeView _treeView;
         private TreeViewState _treeviewState;
+        private SearchField _SearchField;
+    }
+
+    internal class MyMultiColumnHeader : MultiColumnHeader
+    {
+        Mode m_Mode;
+
+        public enum Mode
+        {
+            LargeHeader,
+            DefaultHeader,
+            MinimumHeaderWithoutSorting
+        }
+
+        public MyMultiColumnHeader(MultiColumnHeaderState state)
+            : base(state)
+        {
+            mode = Mode.DefaultHeader;
+        }
+
+        public Mode mode
+        {
+            get
+            {
+                return m_Mode;
+            }
+            set
+            {
+                m_Mode = value;
+                switch (m_Mode)
+                {
+                    case Mode.LargeHeader:
+                        canSort = true;
+                        height = 37f;
+                        break;
+                    case Mode.DefaultHeader:
+                        canSort = true;
+                        height = DefaultGUI.defaultHeight;
+                        break;
+                    case Mode.MinimumHeaderWithoutSorting:
+                        canSort = false;
+                        height = DefaultGUI.minimumHeight;
+                        break;
+                }
+            }
+        }
+
+        protected override void ColumnHeaderGUI(MultiColumnHeaderState.Column column, Rect headerRect, int columnIndex)
+        {
+            // Default column header gui
+            base.ColumnHeaderGUI(column, headerRect, columnIndex);
+
+            // Add additional info for large header
+            if (mode == Mode.LargeHeader)
+            {
+                // Show example overlay stuff on some of the columns
+                if (columnIndex > 2)
+                {
+                    headerRect.xMax -= 3f;
+                    var oldAlignment = EditorStyles.largeLabel.alignment;
+                    EditorStyles.largeLabel.alignment = TextAnchor.UpperRight;
+                    GUI.Label(headerRect, 36 + columnIndex + "%", EditorStyles.largeLabel);
+                    EditorStyles.largeLabel.alignment = oldAlignment;
+                }
+            }
+        }
     }
 }
 

@@ -28,7 +28,10 @@ namespace KA
         internal static void Init()
         {
             _inst = new SerializeBuildInfo();
+            _inst._id = 1;
         }
+
+        internal int BuildID { get { return _id++; } }
 
         internal bool HasSerialized { get { return _hasSerialized; } }
 
@@ -38,17 +41,19 @@ namespace KA
 
         internal string OutputPath { get; private set; }
         //private List<string> buildInAssets = new List<string>();
-        public List<AssetTreeElement> sceneAssets = new List<AssetTreeElement>();
+        //public List<AssetTreeElement> sceneAssets = new List<AssetTreeElement>();
 
-        public HashSet<string> usedAssetList = new HashSet<string>();
+
+        public List<AssetTreeElement> useList = new List<AssetTreeElement>();
 
         #region Build Processor
         public void OnProcessScene(Scene scene)
         {
             string[] dependencies = AssetDatabase.GetDependencies(scene.path, true);
             SceneAssetItem item = new SceneAssetItem(scene);
+            useList.Add(item);
+
             item.CollectDependicies();
-            sceneAssets.Add(item);
         }
 
         public void OnPreprocessBuild(BuildReport report)
@@ -76,7 +81,6 @@ namespace KA
         }
         #endregion
 
-        #region serialize
         public void Serialize(string selectPath)
         {
             string content = File.ReadAllText(selectPath);
@@ -84,10 +88,15 @@ namespace KA
             _inst._hasSerialized = true;
         }
 
-        #endregion
+        public void AddItem(AssetTreeElement element)
+        {
+            useList.Add(element);
+        }
+
 
 
         bool _hasSerialized = false;
+        int _id = 1;
     }
 }
 
