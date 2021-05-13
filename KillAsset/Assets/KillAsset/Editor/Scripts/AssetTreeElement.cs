@@ -8,17 +8,11 @@ using UnityEngine;
 
 namespace KA
 {
-    public enum AssetType
-    {
-        None = 0,
-        Scene = 1,
-        Prefab = 2,
-    }
 
     [Serializable]
     public class AssetTreeElement : TreeElement
     {
-        [SerializeField] protected int m_assetType;
+        [SerializeField] protected Type m_assetType;
         [SerializeField] protected string m_path;
         protected string m_assetGuid;
 
@@ -31,7 +25,9 @@ namespace KA
             return element;
         }
 
-        public int AssetType
+        private static Dictionary<Type, Texture> iconDictionary = new Dictionary<Type, Texture>();
+
+        public Type AssetType
         {
             get { return m_assetType; }
             set { m_assetType = value; }
@@ -49,7 +45,22 @@ namespace KA
             set { m_assetGuid = value; }
         }
 
-        public AssetType GetAssetType() { return (AssetType)m_assetType; }
+        public Texture Icon
+        {
+            get
+            {
+                if (m_assetType == null)
+                    return null;
+
+                if (!iconDictionary.TryGetValue(AssetType, out Texture image))
+                {
+                    image = EditorGUIUtility.ObjectContent(null, m_assetType).image;
+                    iconDictionary.Add(m_assetType, image);
+                }
+
+                return image;
+            }
+        }
 
         public List<AssetTreeElement> GetDependencies()
         {
@@ -59,16 +70,6 @@ namespace KA
         public virtual void CollectDependicies() { }
 
         public List<AssetTreeElement> dependencies = new List<AssetTreeElement>();
-
-        public static bool operator == (AssetTreeElement a, AssetTreeElement b)
-        {
-            return string.CompareOrdinal(a.Path, b.Path) == 0;
-        }
-
-        public static bool operator != (AssetTreeElement a, AssetTreeElement b)
-        {
-            return string.CompareOrdinal(a.Path, b.Path) != 0;
-        }
     }
 }
 

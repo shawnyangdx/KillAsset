@@ -26,16 +26,71 @@ namespace KA
             if(_toolbarSelected != selected)
             {
                 _toolbarSelected = selected;
-                var assetList = GetAssetList();
-                window.TreeView.treeModel.SetData(assetList);
-                window.TreeView.Reload();
-                window.Repaint();
+                RefreshTreeView(window);
             }
+
+            if (_toolbarSelected == (int)AssetShowMode.Unuse)
+            {
+                if (window.TreeView.HasSelection())
+                {
+                    string deleteText = window.TreeView.SelectionObjects.Count > 1 ? "Delete All" : "Delete";
+                    if (GUI.Button(GetDeleteBtnRect(window.position), deleteText))
+                    {
+                        bool isOK = EditorUtility.DisplayDialog("Warning",
+                            "Cannot revert after delete, it's recommended to delete after backup.",
+                            "OK",
+                            "Cancel");
+
+                        if (isOK)
+                        {
+                            AssetTreeElement curElement = null;
+                            try
+                            {
+                                var objects = window.TreeView.SelectionObjects;
+                                for (int i = 0; i < objects.Count; i++)
+                                {
+                                    curElement = objects[i];
+                                    int index = SerializeBuildInfo.Inst.treeList.FindIndex(v => v.id == curElement.id);
+                                    if (index >= 0)
+                                    {
+                                        SerializeBuildInfo.Inst.treeList.RemoveAt(index);
+                                        if (SerializeBuildInfo.Inst.guidToAsset.ContainsKey(curElement.Guid))
+                                            SerializeBuildInfo.Inst.guidToAsset.Remove(curElement.Guid);
+                                    }
+
+                                    AssetDatabase.DeleteAsset(objects[i].Path);
+
+                                }
+
+                                RefreshTreeView(window);
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.LogErrorFormat("Deleteing have mistake:{0}, Path : {1}", e.Message, curElement.Path);
+                                throw e;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void RefreshTreeView(MainWindow window)
+        {
+            var assetList = GetAssetList();
+            window.TreeView.treeModel.SetData(assetList);
+            window.TreeView.Reload();
+            window.Repaint();
         }
 
         private Rect GetToolBarRect()
         {
-            return new Rect(MainWindow.LeftExpendWidth + 10, 5, 200, 20);
+            return new Rect(MainWindow.LeftExpendWidth + 10, 5, 300, 20);
+        }
+
+        private Rect GetDeleteBtnRect(Rect position)
+        {
+            return new Rect(position.width - MainWindow.RightExpendOffset, position.height - 105, 100, 30);
         }
 
         private void GetUselessAssets()
@@ -46,32 +101,51 @@ namespace KA
         private List<AssetTreeElement> GetAssetList()
         {
             List<AssetTreeElement> elements = new List<AssetTreeElement>();
-            if (_toolbarSelected == (int)AssetShowMode.All)
+            if(_toolbarSelected == (int)AssetShowMode.Summary)
+            {
+                elements = SerializeBuildInfo.Inst.treeList;
+            }
+            else if (_toolbarSelected == (int)AssetShowMode.All)
             {
                 AssetTreeHelper.ListToTree(SerializeBuildInfo.Inst.allAssetPaths, elements);
             }
             else if (_toolbarSelected == (int)AssetShowMode.Used)
             {
-                //var list = SerializeBuildInfo.Inst.useList;
-                //for (int i = 0; i < list.Count; i++)
-                //{
-                //    elements.Find(v => v == list[i]);
-                //}
-                //elements = SerializeBuildInfo.Inst.useList.Distinct().ToList();
+                var useList = SerializeBuildInfo.Inst.treeList
+                    .Where(v => !string.IsNullOrEmpty(v.Guid))
+                    .Where(v => v.parent != null && !v.parent.IsRoot)
+                    .Select(v => v.Path).Distinct().ToList();
+
+                AssetTreeHelper.ListToTree(useList, elements);
             }
             else
             {
-                var guidList = SerializeBuildInfo.Inst.useList
-                    .Where(v => !string.IsNullOrEmpty(v.Guid))
-                    .Where(v => !v.hasChildren && v.parent.IsRoot)
-                    .Select(v => v.Path).Distinct().ToList();
+                List<AssetTreeElement> newList = SerializeBuildInfo.Inst.treeList;
 
-                AssetTreeHelper.ListToTree(guidList, elements);
+                var usedGuidList = newList
+                .Where(v => !string.IsNullOrEmpty(v.Guid))
+                .Where(v => v.parent != null && !v.parent.IsRoot)
+                .Select(v => v.Guid)
+                .ToList();
+
+                List<string> unuseList = new List<string>();
+                foreach (var item in SerializeBuildInfo.Inst.guidToAsset)
+                {
+                    if (string.IsNullOrEmpty(item.Value.Path))
+                        continue;
+
+                    if(usedGuidList.Contains(item.Key))
+                        continue;
+
+                    unuseList.Add(item.Value.Path);
+                }
+
+                AssetTreeHelper.ListToTree(unuseList, elements);
             }
 
             return elements;
         }
-        private int _toolbarSelected = -1;
+        private int _toolbarSelected = 0;
 
     }
 

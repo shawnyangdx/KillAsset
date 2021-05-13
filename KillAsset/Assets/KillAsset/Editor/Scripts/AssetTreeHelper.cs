@@ -33,19 +33,9 @@ namespace KA
                 depth = depth,
                 name = Path.GetFileName(path),
                 Path = path,
-                Guid = AssetDatabase.AssetPathToGUID(path)
+                Guid = AssetDatabase.AssetPathToGUID(path),
+                AssetType = AssetDatabase.GetMainAssetTypeAtPath(path)
             };
-
-            var extension = Path.GetExtension(path);
-            switch (extension)
-            {
-                case "unity":
-                    element.AssetType = (int)AssetType.Scene;
-                    Debug.Log(extension);
-                    break;
-                default:
-                    break;
-            }
 
             return element;
         }

@@ -41,14 +41,13 @@ namespace KA
         internal BuildTarget Platform { get; private set; }
 
         internal string OutputPath { get; private set; }
-        //private List<string> buildInAssets = new List<string>();
-        //public List<AssetTreeElement> sceneAssets = new List<AssetTreeElement>();
 
         internal List<string> allAssetPaths = new List<string>();
-        
-        internal List<string> allAssetGuid = new List<string>();
 
-        public List<AssetTreeElement> useList = new List<AssetTreeElement>();
+        internal Dictionary<string, AssetTreeElement> guidToAsset = new Dictionary<string, AssetTreeElement>();
+        //internal List<string> allAssetGuid = new List<string>();
+
+        public List<AssetTreeElement> treeList = new List<AssetTreeElement>();
 
         public void CollectAllAssetPaths()
         {
@@ -59,7 +58,6 @@ namespace KA
                .Where(v => Path.GetExtension(v) != ".cs")
                .Select(v => FileUtil.GetProjectRelativePath(v)).ToList();
 
-                allAssetGuid = allAssetPaths.Select(v => AssetDatabase.AssetPathToGUID(v)).ToList();
                 _hasCollectAllAssets = true;
             }
         }
@@ -97,9 +95,22 @@ namespace KA
 
         public void AddItem(AssetTreeElement element)
         {
-            useList.Add(element);
+            treeList.Add(element);
+            if(!guidToAsset.TryGetValue(element.Guid, out AssetTreeElement value))
+            {
+                guidToAsset.Add(element.Guid, element);
+            }
         }
 
+        public string GetPathFromGuid(string guid)
+        {
+            if (guidToAsset.TryGetValue(guid, out AssetTreeElement value))
+            {
+                return value.Path;
+            }
+
+            return "";
+        }
 
 
         bool _hasSerialized = false;

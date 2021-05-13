@@ -12,6 +12,7 @@ namespace KA
     {
         #region static method
         public static float LeftExpendWidth = 120;
+        public static float RightExpendOffset = 110;
 
         private static MainWindow mainWindow;
 
@@ -120,8 +121,23 @@ namespace KA
             var objectList = _treeView.SelectionObjects;
             if(objectList.Count == 1)
             {
-                GUI.Label(new Rect(GetLeftSpace(), position.height - 85, position.width / 2, 20), "Info:");
-                GUI.Label(new Rect(GetLeftSpace(), position.height - 65, position.width / 2, 20), objectList[0].Path);
+                var obj = objectList[0];
+                if (obj.Icon != null)
+                {
+                    GUI.DrawTexture(new Rect(GetLeftSpace(), position.height - 105, 80, 80), obj.Icon);
+                    GUI.Label(new Rect(GetLeftSpace() + 80, position.height - 105, position.width / 2, 20), "Info:");
+                    GUI.Label(new Rect(GetLeftSpace() + 80, position.height - 85, position.width / 2, 20), objectList[0].Path);
+                }
+                else
+                {
+                    GUI.Label(new Rect(GetLeftSpace(), position.height - 105, position.width / 2, 20), "Info:");
+                    GUI.Label(new Rect(GetLeftSpace(), position.height - 85, position.width / 2, 20), objectList[0].Path);
+                }
+            }
+            else
+            {
+                string msg = string.Format("Select {{{0}}} Items", objectList.Count);
+                GUI.Label(new Rect(GetLeftSpace(), position.height - 105, position.width / 2, 20), msg);
             }
         }
 
@@ -136,7 +152,7 @@ namespace KA
         private float GetRightSpace()
         {
             if (_showPipelineExpend)
-                return position.width - 110;
+                return position.width - RightExpendOffset;
 
             return position.width;
         }
@@ -197,7 +213,7 @@ namespace KA
                     multiColumnHeader.ResizeToFit();
 
                 var root = AssetTreeElement.CreateRoot();
-                var treeModel = new TreeModel<AssetTreeElement>(SerializeBuildInfo.Inst.useList, root);
+                var treeModel = new TreeModel<AssetTreeElement>(SerializeBuildInfo.Inst.treeList, root);
 
                 _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
                 _treeView.Reload();
@@ -260,7 +276,6 @@ namespace KA
             internal string name;
         }
 
-        private int _toolbarSelected = 0;
         private bool m_Initialized = false;
         private bool _showPipelineExpend = false;
         [SerializeField] MultiColumnHeaderState m_MultiColumnHeaderState;

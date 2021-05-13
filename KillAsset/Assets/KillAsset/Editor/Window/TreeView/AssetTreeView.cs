@@ -14,6 +14,7 @@ namespace KA
 
     enum AssetShowMode
     {
+        Summary,
         Unuse,
         Used,
         All
@@ -91,7 +92,7 @@ namespace KA
             {
                 case ColumnType.Icon1:
                     {
-                        GUI.DrawTexture(cellRect, DetermineIconType(item.data), ScaleMode.ScaleToFit);
+                        GUI.DrawTexture(cellRect, item.data.Icon, ScaleMode.ScaleToFit);
                     }
                     break;
                 case ColumnType.Name:
@@ -105,24 +106,6 @@ namespace KA
                     }
                     break;
             }
-        }
-
-        Texture2D DetermineIconType(AssetTreeElement element)
-        {
-            switch (element.GetAssetType())
-            {
-                case AssetType.None:
-                    return null;
-                case AssetType.Scene:
-                    Texture2D sceneTex = EditorGUIUtility.FindTexture("sceneasset icon.asset");
-                    return sceneTex;
-                case AssetType.Prefab:
-                    return null;
-                default:
-                    break;
-            }
-
-            return null;
         }
 
 
