@@ -22,55 +22,60 @@ namespace KA
 
         public void OnGUI(MainWindow window)
         {
-            int selected = GUI.Toolbar(GetToolBarRect(), _toolbarSelected, Enum.GetNames(typeof(AssetShowMode)));
+            int selected = GUI.Toolbar(GetToolBarRect(window), _toolbarSelected, Enum.GetNames(typeof(AssetShowMode)));
             if(_toolbarSelected != selected)
             {
                 _toolbarSelected = selected;
                 RefreshTreeView(window);
             }
 
-            if (_toolbarSelected == (int)AssetShowMode.Unuse)
+            DrawDeleteBtnInfo(window);
+        }
+
+        private void DrawDeleteBtnInfo(MainWindow window)
+        {
+            if (_toolbarSelected != (int)AssetShowMode.Unuse)
+                return;
+
+            if (!window.TreeView.HasSelection())
+                return;
+
+            string deleteText = window.TreeView.SelectionObjects.Count > 1 ? "Delete All" : "Delete";
+            if (GUI.Button(GetDeleteBtnRect(window.position), deleteText))
             {
-                if (window.TreeView.HasSelection())
+                bool isOK = EditorUtility.DisplayDialog("Warning",
+                    "Cannot revert after delete, it's recommended to delete after backup.",
+                    "OK",
+                    "Cancel");
+
+                if (!isOK)
+                    return;
+
+                AssetTreeElement curElement = null;
+                try
                 {
-                    string deleteText = window.TreeView.SelectionObjects.Count > 1 ? "Delete All" : "Delete";
-                    if (GUI.Button(GetDeleteBtnRect(window.position), deleteText))
+                    var objects = window.TreeView.SelectionObjects;
+                    for (int i = 0; i < objects.Count; i++)
                     {
-                        bool isOK = EditorUtility.DisplayDialog("Warning",
-                            "Cannot revert after delete, it's recommended to delete after backup.",
-                            "OK",
-                            "Cancel");
-
-                        if (isOK)
+                        curElement = objects[i];
+                        int index = SerializeBuildInfo.Inst.treeList.FindIndex(v => v.id == curElement.id);
+                        if (index >= 0)
                         {
-                            AssetTreeElement curElement = null;
-                            try
-                            {
-                                var objects = window.TreeView.SelectionObjects;
-                                for (int i = 0; i < objects.Count; i++)
-                                {
-                                    curElement = objects[i];
-                                    int index = SerializeBuildInfo.Inst.treeList.FindIndex(v => v.id == curElement.id);
-                                    if (index >= 0)
-                                    {
-                                        SerializeBuildInfo.Inst.treeList.RemoveAt(index);
-                                        if (SerializeBuildInfo.Inst.guidToAsset.ContainsKey(curElement.Guid))
-                                            SerializeBuildInfo.Inst.guidToAsset.Remove(curElement.Guid);
-                                    }
-
-                                    AssetDatabase.DeleteAsset(objects[i].Path);
-
-                                }
-
-                                RefreshTreeView(window);
-                            }
-                            catch (Exception e)
-                            {
-                                Debug.LogErrorFormat("Deleteing have mistake:{0}, Path : {1}", e.Message, curElement.Path);
-                                throw e;
-                            }
+                            SerializeBuildInfo.Inst.treeList.RemoveAt(index);
+                            if (SerializeBuildInfo.Inst.guidToAsset.ContainsKey(curElement.Guid))
+                                SerializeBuildInfo.Inst.guidToAsset.Remove(curElement.Guid);
                         }
+
+                        AssetDatabase.DeleteAsset(objects[i].Path);
+
                     }
+
+                    RefreshTreeView(window);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogErrorFormat("Deleteing have mistake:{0}, Path : {1}", e.Message, curElement.Path);
+                    throw e;
                 }
             }
         }
@@ -83,9 +88,9 @@ namespace KA
             window.Repaint();
         }
 
-        private Rect GetToolBarRect()
+        private Rect GetToolBarRect(MainWindow window)
         {
-            return new Rect(MainWindow.LeftExpendWidth + 10, 5, 300, 20);
+            return new Rect(window.GetLeftSpace() + (window.ShowPipelineExpend ? 10 : 30), 5, 300, 20);
         }
 
         private Rect GetDeleteBtnRect(Rect position)

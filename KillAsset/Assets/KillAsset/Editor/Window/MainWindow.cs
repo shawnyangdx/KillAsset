@@ -12,6 +12,7 @@ namespace KA
     {
         #region static method
         public static float LeftExpendWidth = 120;
+        public static float LeftDefaultWidth = 10;
         public static float RightExpendOffset = 110;
 
         private static MainWindow mainWindow;
@@ -31,6 +32,8 @@ namespace KA
         #endregion
 
         internal AssetTreeView TreeView { get { return _treeView; } }
+
+        internal bool ShowPipelineExpend { get { return _showPipelineExpend; } }
 
         private void OnEnable()
         {
@@ -141,12 +144,12 @@ namespace KA
             }
         }
 
-        private float GetLeftSpace()
+        internal float GetLeftSpace()
         {
             if (_showPipelineExpend)
                 return LeftExpendWidth;
 
-            return 10;
+            return LeftDefaultWidth;
         }
 
         private float GetRightSpace()
