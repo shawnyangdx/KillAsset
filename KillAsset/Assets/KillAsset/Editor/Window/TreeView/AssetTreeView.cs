@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -11,13 +12,20 @@ namespace KA
         Name,
     }
 
-    class AssetTreeView : TreeViewWithTreeModel<AssetTreeElement>
+    enum AssetShowMode
+    {
+        Unuse,
+        Used,
+        All
+    }
+
+    internal class AssetTreeView : TreeViewWithTreeModel<AssetTreeElement>
     {
         static float _spaceLabel = 2f;
 
-
+        #region construct
         public AssetTreeView(TreeViewState state, MultiColumnHeader multicolumnHeader, TreeModel<AssetTreeElement> model)
-            : base(state, multicolumnHeader, model)
+    : base(state, multicolumnHeader, model)
         {
             rowHeight = 20;
             columnIndexForTreeFoldouts = 1;
@@ -29,42 +37,34 @@ namespace KA
 
         }
 
-        public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState(float treeViewWidth)
+        #endregion
+
+        #region override method
+        protected override void SelectionChanged(IList<int> selectedIds)
         {
-            var columns = new[]
+            if (selectedIds.Count == 0)
+                return;
+
+            List<AssetTreeElement> elements = selectedIds.Select(v => treeModel.Find(v)).ToList();
+            if (elements.Count == 0)
+                return;
+
+            _selectionObjects = elements;
+            if (elements.Count == 1)
             {
-                new MultiColumnHeaderState.Column
+                Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(elements[0].Path);
+            }
+            else
+            {
+                UnityEngine.Object[] targetObjects = new Object[elements.Count];
+                for (int i = 0; i < elements.Count; i++)
                 {
-                    headerContent = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "),
-                    contextMenuText = "Asset",
-                    headerTextAlignment = TextAlignment.Center,
-                    sortedAscending = true,
-                    sortingArrowAlignment = TextAlignment.Right,
-                    width = 30,
-                    minWidth = 30,
-                    maxWidth = 60,
-                    autoResize = false,
-                    allowToggleVisibility = true
-                },
-                new MultiColumnHeaderState.Column
-                {
-                    headerContent = new GUIContent("Name"),
-                    headerTextAlignment = TextAlignment.Left,
-                    sortedAscending = true,
-                    sortingArrowAlignment = TextAlignment.Center,
-                    width = 150,
-                    minWidth = 60,
-                    autoResize = false,
-                    allowToggleVisibility = false
-                },
-            };
+                    targetObjects[i] = AssetDatabase.LoadMainAssetAtPath(elements[i].Path);
+                }
 
-            //Assert.AreEqual(columns.Length, Enum.GetValues(typeof(MyColumns)).Length, "Number of columns should match number of enum values: You probably forgot to update one of them.");
-
-            var state = new MultiColumnHeaderState(columns);
-            return state;
+                Selection.objects = targetObjects;
+            }
         }
-
 
         protected override void RowGUI(RowGUIArgs args)
         {
@@ -75,7 +75,13 @@ namespace KA
                 CellGUI(args.GetCellRect(i), item, (ColumnType)args.GetColumn(i), ref args);
             }
         }
+        #endregion
 
+        #region public method
+
+        public List<AssetTreeElement> SelectionObjects { get { return _selectionObjects; } }
+
+        #endregion
         void CellGUI(Rect cellRect, TreeViewItem<AssetTreeElement> item, ColumnType column, ref RowGUIArgs args)
         {
             // Center cell rect vertically (makes it easier to place controls, icons etc in the cells)
@@ -117,7 +123,10 @@ namespace KA
             }
 
             return null;
-        }   
+        }
+
+
+        private List<AssetTreeElement> _selectionObjects = new List<AssetTreeElement>();
     }
 
 }

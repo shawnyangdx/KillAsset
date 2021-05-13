@@ -19,6 +19,9 @@ namespace KA
     public class AssetTreeElement : TreeElement
     {
         [SerializeField] protected int m_assetType;
+        [SerializeField] protected string m_path;
+        protected string m_assetGuid;
+
         public static AssetTreeElement CreateRoot()
         {
             AssetTreeElement element = new AssetTreeElement();
@@ -26,6 +29,24 @@ namespace KA
             element.depth = -1;
             element.name = "Root";
             return element;
+        }
+
+        public int AssetType
+        {
+            get { return m_assetType; }
+            set { m_assetType = value; }
+        }
+
+        public string Path
+        {
+            get { return m_path; }
+            set { m_path = value; }
+        }
+
+        public string Guid
+        {
+            get { return m_assetGuid; }
+            set { m_assetGuid = value; }
         }
 
         public AssetType GetAssetType() { return (AssetType)m_assetType; }
@@ -38,25 +59,16 @@ namespace KA
         public virtual void CollectDependicies() { }
 
         public List<AssetTreeElement> dependencies = new List<AssetTreeElement>();
-    }
 
-    public class SceneAssetItem : AssetTreeElement
-    {
-        public SceneAssetItem(Scene scene) : base()
+        public static bool operator == (AssetTreeElement a, AssetTreeElement b)
         {
-            this._scene = scene;
-            id = SerializeBuildInfo.Inst.BuildID;
-            depth = 0;
-            name =  _scene.name;
-            m_assetType = (int)AssetType.Scene;
+            return string.CompareOrdinal(a.Path, b.Path) == 0;
         }
 
-        public override void CollectDependicies()
+        public static bool operator != (AssetTreeElement a, AssetTreeElement b)
         {
-            dependencies = AssetTreeHelper.CollectAssetTreeElement(_scene.path, this.depth);
+            return string.CompareOrdinal(a.Path, b.Path) != 0;
         }
-
-        Scene _scene;
     }
 }
 

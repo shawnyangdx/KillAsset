@@ -12,7 +12,7 @@ namespace KA
 		[SerializeField] int m_ID;
 		[SerializeField] string m_Name;
 		[SerializeField] int m_Depth;
-		[NonSerialized] TreeElement m_Parent;
+        [NonSerialized] TreeElement m_Parent;
 		[NonSerialized] List<TreeElement> m_Children;
 
 		public int depth
@@ -37,6 +37,14 @@ namespace KA
 		{
 			get { return children != null && children.Count > 0; }
 		}
+
+        public bool IsRoot
+        {
+            get
+            {
+                return m_Depth == -1;
+            }
+        }
 
 		public string name
 		{

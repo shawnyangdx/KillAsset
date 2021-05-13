@@ -21,7 +21,15 @@ namespace KA
 
 	internal class TreeViewWithTreeModel<T> : TreeView where T : TreeElement
 	{
-		TreeModel<T> m_TreeModel;
+
+//        GUIContent[] guiContents_toolbarShowSelection = new GUIContent[3]
+//{
+//                new GUIContent(AH_MultiColumnHeader.AssetShowMode.Unused.ToString(),"Show only assets that was NOT included in build"),
+//                new GUIContent(AH_MultiColumnHeader.AssetShowMode.Used.ToString(),"Show only assets that WAS included in build"),
+//                new GUIContent(AH_MultiColumnHeader.AssetShowMode.All.ToString(),"Show all assets in project")
+//};
+
+        TreeModel<T> m_TreeModel;
 		readonly List<TreeViewItem> m_Rows = new List<TreeViewItem>(100);
 		public event Action treeChanged;
 
@@ -54,7 +62,7 @@ namespace KA
 			Reload ();
 		}
 
-		protected override TreeViewItem BuildRoot()
+        protected override TreeViewItem BuildRoot()
 		{
             int depthForHiddenRoot = -1;
 			return new TreeViewItem<T>(m_TreeModel.root.id, depthForHiddenRoot, m_TreeModel.root.name, m_TreeModel.root);

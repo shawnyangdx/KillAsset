@@ -5,6 +5,7 @@ using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.IO;
+using System.Linq;
 
 namespace KA
 {
@@ -31,7 +32,7 @@ namespace KA
             _inst._id = 1;
         }
 
-        internal int BuildID { get { return _id++; } }
+        internal int BuildID { get { return _id++; }set { _id = value; } }
 
         internal bool HasSerialized { get { return _hasSerialized; } }
 
@@ -43,43 +44,49 @@ namespace KA
         //private List<string> buildInAssets = new List<string>();
         //public List<AssetTreeElement> sceneAssets = new List<AssetTreeElement>();
 
+        internal List<string> allAssetPaths = new List<string>();
+        
+        internal List<string> allAssetGuid = new List<string>();
 
         public List<AssetTreeElement> useList = new List<AssetTreeElement>();
 
-        #region Build Processor
-        public void OnProcessScene(Scene scene)
+        public void CollectAllAssetPaths()
         {
-            string[] dependencies = AssetDatabase.GetDependencies(scene.path, true);
-            SceneAssetItem item = new SceneAssetItem(scene);
-            useList.Add(item);
-
-            item.CollectDependicies();
-        }
-
-        public void OnPreprocessBuild(BuildReport report)
-        {
-            OutputPath = report.summary.outputPath;
-            StartTime = report.summary.buildStartedAt;
-            Platform = report.summary.platform;
-        }
-
-        public void OnPostprocessBuild(BuildReport report)
-        {
-            TimeSpan span = (StartTime - new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime());
-            string serializePath = string.Format("{0}/{1}_{2}_{3}.{4}",
-                Application.dataPath + "/../",
-                ((long)span.TotalSeconds).ToString(),
-                Platform.ToString(),
-                "SerializeInfo",
-                EditorConfig.Instance.dataFileExtension);
-
-            string jsonStr = JsonUtility.ToJson(this);
-            using (StreamWriter writter = new StreamWriter(serializePath))
+            if(!_hasCollectAllAssets)
             {
-                writter.WriteLine(jsonStr);
+                allAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
+               .Where(v => Path.GetExtension(v) != ".meta")
+               .Where(v => Path.GetExtension(v) != ".cs")
+               .Select(v => FileUtil.GetProjectRelativePath(v)).ToList();
+
+                allAssetGuid = allAssetPaths.Select(v => AssetDatabase.AssetPathToGUID(v)).ToList();
+                _hasCollectAllAssets = true;
             }
         }
-        #endregion
+
+        //public void OnPreprocessBuild(BuildReport report)
+        //{
+        //    OutputPath = report.summary.outputPath;
+        //    StartTime = report.summary.buildStartedAt;
+        //    Platform = report.summary.platform;
+        //}
+
+        //public void OnPostprocessBuild(BuildReport report)
+        //{
+        //    TimeSpan span = (StartTime - new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime());
+        //    string serializePath = string.Format("{0}/{1}_{2}_{3}.{4}",
+        //        Application.dataPath + "/../",
+        //        ((long)span.TotalSeconds).ToString(),
+        //        Platform.ToString(),
+        //        "SerializeInfo",
+        //        EditorConfig.Instance.dataFileExtension);
+
+        //    string jsonStr = JsonUtility.ToJson(this);
+        //    using (StreamWriter writter = new StreamWriter(serializePath))
+        //    {
+        //        writter.WriteLine(jsonStr);
+        //    }
+        //}
 
         public void Serialize(string selectPath)
         {
@@ -97,6 +104,7 @@ namespace KA
 
         bool _hasSerialized = false;
         int _id = 1;
+        bool _hasCollectAllAssets = false;
     }
 }
 
