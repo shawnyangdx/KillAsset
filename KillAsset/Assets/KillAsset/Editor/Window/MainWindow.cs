@@ -42,6 +42,12 @@ namespace KA
 
             SerializeBuildInfo.Init();
             CollectPipeLines();
+            AssetTreeHelper.onCollectDependencies = OnCollectDependenies;
+        }
+
+        private void OnDisable()
+        {
+            AssetTreeHelper.onCollectDependencies = null;
         }
 
         private void OnGUI()
@@ -83,27 +89,32 @@ namespace KA
                     for (int i = 0; i < current.Value.Count; i++)
                     {
                         var p = current.Value[i];
-                        bool toggleSstate = GUI.Toggle(GetPipelineButtonRect(pipeIndex++),
+                        bool toggleState = GUI.Toggle(GetPipelineButtonRect(pipeIndex++),
                             _pipelineToggleState[p].toggle,
                             _pipelineToggleState[p].name,
                             "Button");
 
-                        if (_pipelineToggleState[p].toggle != toggleSstate)
+                        if (_pipelineToggleState[p].toggle != toggleState)
                         {
-                            var list = p.GetObjectPath();
-                            list.ForEach(v =>
+                            if(toggleState)
                             {
-                                AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
-                                SerializeBuildInfo.Inst.AddItem(element);
+                                var list = p.GetObjectPath();
+                                list.ForEach(v =>
+                                {
+                                    AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
+                                    SerializeBuildInfo.Inst.AddItem(element);
 
-                                AssetTreeHelper.CollectAssetDependencies(v, 0);
-                            });
+                                    AssetTreeHelper.CollectAssetDependencies(v, 0);
+                                });
 
+                                EditorUtility.ClearProgressBar();
+                            }
+  
                             if (_lastSelectPipeline != null && _lastSelectPipeline != p)
                                 _pipelineToggleState[p].toggle = false;
 
                             _lastSelectPipeline = p;
-                            _pipelineToggleState[p].toggle = toggleSstate;
+                            _pipelineToggleState[p].toggle = toggleState;
                             InitIfNeeded();
                         }
                     }
@@ -271,6 +282,11 @@ namespace KA
                     ilist.Add(inst);
                 }
             }
+        }
+
+        private void OnCollectDependenies(string path)
+        {
+            EditorUtility.DisplayProgressBar("Analyze...", path, 0);
         }
 
         internal class PipeLineState

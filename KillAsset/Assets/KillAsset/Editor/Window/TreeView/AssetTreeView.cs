@@ -57,13 +57,13 @@ namespace KA
             }
             else
             {
-                UnityEngine.Object[] targetObjects = new Object[elements.Count];
-                for (int i = 0; i < elements.Count; i++)
-                {
-                    targetObjects[i] = AssetDatabase.LoadMainAssetAtPath(elements[i].Path);
-                }
+                //UnityEngine.Object[] targetObjects = new Object[elements.Count];
+                //for (int i = 0; i < elements.Count; i++)
+                //{
+                //    targetObjects[i] = AssetDatabase.LoadMainAssetAtPath(elements[i].Path);
+                //}
 
-                Selection.objects = targetObjects;
+                //Selection.objects = targetObjects;
             }
         }
 

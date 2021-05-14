@@ -54,8 +54,7 @@ namespace KA
             if(!_hasCollectAllAssets)
             {
                 allAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
-               .Where(v => Path.GetExtension(v) != ".meta")
-               .Where(v => Path.GetExtension(v) != ".cs")
+               .Where(v => !AssetTreeHelper.IgnorePath(v))
                .Select(v => FileUtil.GetProjectRelativePath(v)).ToList();
 
                 _hasCollectAllAssets = true;

@@ -15,8 +15,7 @@ namespace KA
             SerializeBuildInfo.Inst.CollectAllAssetPaths();
 
             return Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
-                .Where(v => Path.GetExtension(v) != ".meta")
-                .Where(v => Path.GetExtension(v) != ".cs")
+                .Where(v => !AssetTreeHelper.IgnorePath(v))
                 .Select(v => FileUtil.GetProjectRelativePath(v)).ToList();
         }
 
@@ -131,6 +130,7 @@ namespace KA
                 .Where(v => !string.IsNullOrEmpty(v.Guid))
                 .Where(v => v.parent != null && !v.parent.IsRoot)
                 .Select(v => v.Guid)
+                .Distinct()
                 .ToList();
 
                 List<string> unuseList = new List<string>();

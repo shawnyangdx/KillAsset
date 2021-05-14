@@ -33,4 +33,6 @@ public class EditorConfig : ScriptableObject
     public string SceneRootPath = "";
     public string dataFileExtension = ".kainfo";
 
+    public List<string> ignoreExtension;
+
 }

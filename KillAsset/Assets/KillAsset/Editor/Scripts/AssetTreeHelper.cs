@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -9,14 +9,16 @@ namespace KA
 {
     public class AssetTreeHelper
     {
+        public static Action<string> onCollectDependencies;
+
         public static void CollectAssetDependencies(string path, int depth)
         {
+            onCollectDependencies?.Invoke(path);
             string[] depends = AssetDatabase.GetDependencies(path, false);
             for (int i = 0; i < depends.Length; i++)
             {
-                if (Path.GetExtension(depends[i]) == ".cs" ||
-                    Path.GetExtension(depends[i]) == ".meta")
-                    return;
+                if (IgnorePath(depends[i]))
+                    continue;
 
                 AssetTreeElement element = CreateAssetElement(depends[i], depth + 1);
                 SerializeBuildInfo.Inst.AddItem(element);
@@ -52,7 +54,19 @@ namespace KA
             }
         }
 
+        public static bool IgnorePath(string path)
+        {
+            List<string> list = EditorConfig.Instance.ignoreExtension;
+            string ext = Path.GetExtension(path);
 
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (string.CompareOrdinal(list[i], ext) == 0)
+                    return true;
+            }
+
+            return false;
+        }
 
         public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState(float treeViewWidth)
         {
