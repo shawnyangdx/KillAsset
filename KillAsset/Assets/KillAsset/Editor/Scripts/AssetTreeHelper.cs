@@ -9,11 +9,11 @@ namespace KA
 {
     public class AssetTreeHelper
     {
-        public static Action<string> onCollectDependencies;
+        public static Action<string, int> onCollectDependencies;
 
         public static void CollectAssetDependencies(string path, int depth)
         {
-            onCollectDependencies?.Invoke(path);
+            onCollectDependencies?.Invoke(path, depth);
             string[] depends = AssetDatabase.GetDependencies(path, false);
             for (int i = 0; i < depends.Length; i++)
             {

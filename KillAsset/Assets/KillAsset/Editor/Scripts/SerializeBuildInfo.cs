@@ -30,60 +30,22 @@ namespace KA
         {
             _inst = new SerializeBuildInfo();
             _inst._id = 1;
+
+            _inst.AllAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
+              .Where(v => !AssetTreeHelper.IgnorePath(v))
+              .Select(v => FileUtil.GetProjectRelativePath(v).NormalizePath())
+              .ToList();
         }
 
         internal int BuildID { get { return _id++; }set { _id = value; } }
 
         internal bool HasSerialized { get { return _hasSerialized; } }
 
-        internal DateTime StartTime { get; private set; }
-
-        internal BuildTarget Platform { get; private set; }
-
-        internal string OutputPath { get; private set; }
-
-        internal List<string> allAssetPaths = new List<string>();
+        internal List<string> AllAssetPaths = new List<string>();
 
         internal Dictionary<string, AssetTreeElement> guidToAsset = new Dictionary<string, AssetTreeElement>();
-        //internal List<string> allAssetGuid = new List<string>();
 
         public List<AssetTreeElement> treeList = new List<AssetTreeElement>();
-
-        public void CollectAllAssetPaths()
-        {
-            if(!_hasCollectAllAssets)
-            {
-                allAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
-               .Where(v => !AssetTreeHelper.IgnorePath(v))
-               .Select(v => FileUtil.GetProjectRelativePath(v)).ToList();
-
-                _hasCollectAllAssets = true;
-            }
-        }
-
-        //public void OnPreprocessBuild(BuildReport report)
-        //{
-        //    OutputPath = report.summary.outputPath;
-        //    StartTime = report.summary.buildStartedAt;
-        //    Platform = report.summary.platform;
-        //}
-
-        //public void OnPostprocessBuild(BuildReport report)
-        //{
-        //    TimeSpan span = (StartTime - new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime());
-        //    string serializePath = string.Format("{0}/{1}_{2}_{3}.{4}",
-        //        Application.dataPath + "/../",
-        //        ((long)span.TotalSeconds).ToString(),
-        //        Platform.ToString(),
-        //        "SerializeInfo",
-        //        EditorConfig.Instance.dataFileExtension);
-
-        //    string jsonStr = JsonUtility.ToJson(this);
-        //    using (StreamWriter writter = new StreamWriter(serializePath))
-        //    {
-        //        writter.WriteLine(jsonStr);
-        //    }
-        //}
 
         public void Serialize(string selectPath)
         {

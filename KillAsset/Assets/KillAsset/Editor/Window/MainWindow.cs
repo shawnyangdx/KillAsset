@@ -5,16 +5,13 @@ using UnityEditor.IMGUI.Controls;
 using System.Reflection;
 using System;
 using System.Collections.Generic;
+using HP = KA.Helper.WindowParam;
 
 namespace KA
 {
     public class MainWindow : EditorWindow
     {
         #region static method
-        public static float LeftExpendWidth = 120;
-        public static float LeftDefaultWidth = 10;
-        public static float RightExpendOffset = 110;
-
         private static MainWindow mainWindow;
 
         [UnityEditor.MenuItem("Window/Kill Asset _%&k")]
@@ -33,15 +30,13 @@ namespace KA
 
         internal AssetTreeView TreeView { get { return _treeView; } }
 
-        internal bool ShowPipelineExpend { get { return _showPipelineExpend; } }
-
         private void OnEnable()
         {
             if (_treeviewState == null)
                 _treeviewState = new TreeViewState();
 
             SerializeBuildInfo.Init();
-            CollectPipeLines();
+            CollectWorkflows();
             AssetTreeHelper.onCollectDependencies = OnCollectDependenies;
         }
 
@@ -75,56 +70,30 @@ namespace KA
         }
 
         private void DrawPipelineInfo()
-        {  
-            if (_showPipelineExpend)
+        {
+            GUI.Box(new Rect(5, 5, 110, position.height - 10), "");
+            int pipeIndex = 0;
+            for (int i = 0; i < _workflowes.Count; i++)
             {
-                GUI.Box(new Rect(5, 5, 110, position.height - 10), "");
+                var p = _workflowes[i];
+                bool toggleState = GUI.Toggle(GetWorkflowButtonRect(pipeIndex++),
+                    _workflowUIData[p].toggle,
+                    _workflowUIData[p].name,
+                    "Button");
 
-                int pipeIndex = 0;
-                var e = _pipelines.GetEnumerator();
-                while(e.MoveNext())
+                if (_workflowUIData[p].toggle != toggleState)
                 {
-                    var current = e.Current;
-                    GUI.Label(GetPipelineGroupRect(pipeIndex++), current.Key.ToString());
-                    for (int i = 0; i < current.Value.Count; i++)
-                    {
-                        var p = current.Value[i];
-                        bool toggleState = GUI.Toggle(GetPipelineButtonRect(pipeIndex++),
-                            _pipelineToggleState[p].toggle,
-                            _pipelineToggleState[p].name,
-                            "Button");
+                    if (toggleState)
+                        p.Run();
 
-                        if (_pipelineToggleState[p].toggle != toggleState)
-                        {
-                            if(toggleState)
-                            {
-                                var list = p.GetObjectPath();
-                                list.ForEach(v =>
-                                {
-                                    AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
-                                    SerializeBuildInfo.Inst.AddItem(element);
+                    if (_lastSelectPipeline != null && _lastSelectPipeline != p)
+                        _workflowUIData[p].toggle = false;
 
-                                    AssetTreeHelper.CollectAssetDependencies(v, 0);
-                                });
-
-                                EditorUtility.ClearProgressBar();
-                            }
-  
-                            if (_lastSelectPipeline != null && _lastSelectPipeline != p)
-                                _pipelineToggleState[p].toggle = false;
-
-                            _lastSelectPipeline = p;
-                            _pipelineToggleState[p].toggle = toggleState;
-                            InitIfNeeded();
-                        }
-                    }
-
-                    GUI.Label(GetPipelineGroupRect(pipeIndex++), "");
+                    _lastSelectPipeline = p;
+                    _workflowUIData[p].toggle = toggleState;
+                    InitIfNeeded();
                 }
- 
             }
-
-            _showPipelineExpend = GUI.Toggle(GetIndentButtonRect(), _showPipelineExpend, _showPipelineExpend ? "<" : ">", "Button");
         }
 
         private void DebugSelectionInfo()
@@ -138,37 +107,21 @@ namespace KA
                 var obj = objectList[0];
                 if (obj.Icon != null)
                 {
-                    GUI.DrawTexture(new Rect(GetLeftSpace(), position.height - 105, 80, 80), obj.Icon);
-                    GUI.Label(new Rect(GetLeftSpace() + 80, position.height - 105, position.width / 2, 20), "Info:");
-                    GUI.Label(new Rect(GetLeftSpace() + 80, position.height - 85, position.width / 2, 20), objectList[0].Path);
+                    GUI.DrawTexture(new Rect(HP.WorkflowBoxWidth, position.height - 105, 80, 80), obj.Icon);
+                    GUI.Label(new Rect(HP.WorkflowBoxWidth + 80, position.height - 105, position.width / 2, 20), "Info:");
+                    GUI.Label(new Rect(HP.WorkflowBoxWidth + 80, position.height - 85, position.width / 2, 20), objectList[0].Path);
                 }
                 else
                 {
-                    GUI.Label(new Rect(GetLeftSpace(), position.height - 105, position.width / 2, 20), "Info:");
-                    GUI.Label(new Rect(GetLeftSpace(), position.height - 85, position.width / 2, 20), objectList[0].Path);
+                    GUI.Label(new Rect(HP.WorkflowBoxWidth, position.height - 105, position.width / 2, 20), "Info:");
+                    GUI.Label(new Rect(HP.WorkflowBoxWidth, position.height - 85, position.width / 2, 20), objectList[0].Path);
                 }
             }
             else
             {
                 string msg = string.Format("Select {{{0}}} Items", objectList.Count);
-                GUI.Label(new Rect(GetLeftSpace(), position.height - 105, position.width / 2, 20), msg);
+                GUI.Label(new Rect(HP.WorkflowBoxWidth, position.height - 105, position.width / 2, 20), msg);
             }
-        }
-
-        internal float GetLeftSpace()
-        {
-            if (_showPipelineExpend)
-                return LeftExpendWidth;
-
-            return LeftDefaultWidth;
-        }
-
-        private float GetRightSpace()
-        {
-            if (_showPipelineExpend)
-                return position.width - RightExpendOffset;
-
-            return position.width;
         }
 
         private Rect GetIndentButtonRect()
@@ -181,31 +134,32 @@ namespace KA
             return new Rect(10, 30 + 22 * index, 100, 20);
         }
 
-        private Rect GetPipelineButtonRect(int index)
+        private Rect GetWorkflowButtonRect(int index)
         {
-            return new Rect(15, 30 + 22 * index, 90, 20);
+            return new Rect(8, 8 + 22 * index, 102, 20);
         }
 
         private Rect GetSearchRect()
         {
-            return new Rect(GetLeftSpace(), 30, GetRightSpace() - 20, 30);
+            return new Rect(HP.WorkflowBoxWidth, 30, position.width - HP.RightBoardOffset, 30);
         }
+ 
         private Rect GetTreeViewRect()
         {
             if (_treeView != null && _treeView.HasSelection())
-                return new Rect(GetLeftSpace(), 50, GetRightSpace() - 20, position.height - 160);
+                return new Rect(HP.WorkflowBoxWidth, 50, position.width - HP.RightBoardOffset, position.height - 160);
 
-            return new Rect(GetLeftSpace(), 50, GetRightSpace() - 20, position.height - 100);
+            return new Rect(HP.WorkflowBoxWidth, 50, position.width - HP.RightBoardOffset, position.height - 100);
         }
 
         private Rect GetExportBtnRect()
         {
-            return new Rect(GetLeftSpace(), GetRightSpace() - 25, 80, 20);
+            return new Rect(HP.WorkflowBoxWidth, position.width - 25, 80, 20);
         }
 
-        private bool HasPipeline()
+        private bool HasWorkflow()
         {
-            return _pipelineToggleState != null;
+            return _workflowUIData != null;
         }
 
         private void InitIfNeeded()
@@ -238,12 +192,10 @@ namespace KA
             }
         }
 
-        private void CollectPipeLines()
+        private void CollectWorkflows()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var target = typeof(IPipeline);
-
-
+            var target = typeof(IWorkflow);
             var list = assembly.GetTypes()
                 .Where(t => t.Namespace != null && t.Namespace.Contains("KA"))
                 .Where(t => target.IsAssignableFrom(t) && t != target)
@@ -251,59 +203,59 @@ namespace KA
 
             for (int i = 0; i < list.Count; i++)
             {
-                var t = list[i];
-                var attr = t.GetCustomAttribute<PipelineAttrAttribute>();
-                if(attr == null)
+                Type t = list[i];
+                var ignoreAttr = t.GetCustomAttribute<WorkflowIgnoreAttribute>(false);
+                if(ignoreAttr != null)
                 {
-                    if (!_pipelines.TryGetValue(PipelineGroup.Other, out List<IPipeline> ilist))
+                    continue;
+                }
+
+                var overrideAttr = t.GetCustomAttribute<WorkflowOverrideAttribute>(false);
+                if (overrideAttr != null)
+                {
+                    var inst = (IWorkflow)Activator.CreateInstance(t);
+                    _workflowUIData[inst] = new WorkflowState()
                     {
-                        ilist = new List<IPipeline>();
-                        _pipelines.Add(PipelineGroup.Other, ilist);
-                    }
-                    var inst = (IPipeline)Activator.CreateInstance(t);
-                    _pipelineToggleState[inst] = new PipeLineState() { toggle = false, name = t.GetType().Name };
-                    ilist.Add(inst);
+                        toggle = false,
+                        name = overrideAttr.Name
+                    };
+                    _workflowes.Add(inst);
                 }
                 else
                 {
-                    if (!_pipelines.TryGetValue(attr.Group, out List<IPipeline> ilist))
-                    {
-                        ilist = new List<IPipeline>();
-                        _pipelines.Add(attr.Group, ilist);
-                    }
-
-                    var inst = (IPipeline)Activator.CreateInstance(t);
-                    _pipelineToggleState[inst] = new PipeLineState()
+                    var inst = (IWorkflow)Activator.CreateInstance(t);
+                    _workflowUIData[inst] = new WorkflowState()
                     {
                         toggle = false,
-                        name = string.IsNullOrEmpty(attr.Name) ? t.GetType().Name : attr.Name
+                        name = t.Name.Replace("Workflow", "")
                     };
-
-                    ilist.Add(inst);
+                    _workflowes.Add(inst);
                 }
             }
         }
 
-        private void OnCollectDependenies(string path)
+        private void OnCollectDependenies(string path, int depth)
         {
-            EditorUtility.DisplayProgressBar("Analyze...", path, 0);
+            if(depth == 0)
+            {
+                EditorUtility.DisplayProgressBar("Analyze...", path, 0);
+            }
         }
 
-        internal class PipeLineState
+        internal class WorkflowState
         {
             internal bool toggle;
             internal string name;
         }
 
         private bool m_Initialized = false;
-        private bool _showPipelineExpend = false;
         [SerializeField] MultiColumnHeaderState m_MultiColumnHeaderState;
         private AssetTreeView _treeView;
         private TreeViewState _treeviewState;
         private SearchField _searchField;
-        private Dictionary<PipelineGroup, List<IPipeline>> _pipelines = new Dictionary<PipelineGroup, List<IPipeline>>();
-        private Dictionary<IPipeline, PipeLineState> _pipelineToggleState = new Dictionary<IPipeline, PipeLineState>();
-        IPipeline _lastSelectPipeline;
+        private List<IWorkflow> _workflowes = new List<IWorkflow>();
+        private Dictionary<IWorkflow, WorkflowState> _workflowUIData = new Dictionary<IWorkflow, WorkflowState>();
+        IWorkflow _lastSelectPipeline;
     }
 
     internal class MyMultiColumnHeader : MultiColumnHeader

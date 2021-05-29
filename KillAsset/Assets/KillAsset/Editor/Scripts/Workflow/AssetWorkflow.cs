@@ -1,28 +1,39 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace KA
 {
-    [PipelineAttr(name: "Asset", group: PipelineGroup.Filtration)]
-    public class UnuselessPipeline : IPipeline
+    [WorkflowIgnore]
+    public class AssetWorkflow : IWorkflow
     {
-        public List<string> GetObjectPath()
-        {
-            SerializeBuildInfo.Inst.CollectAllAssetPaths();
+        public virtual void Run() { }
+        public virtual void OnGUI(MainWindow window) { }
+    }
 
-            return Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
-                .Where(v => !AssetTreeHelper.IgnorePath(v))
-                .Select(v => FileUtil.GetProjectRelativePath(v)).ToList();
+    [WorkflowOverride("无用资源清理")]
+    public class UnuselessWorkflow : AssetWorkflow
+    {
+        public override void Run()
+        {
+            SerializeBuildInfo.Inst.AllAssetPaths.ForEach(v =>
+            {
+                AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
+                SerializeBuildInfo.Inst.AddItem(element);
+
+                AssetTreeHelper.CollectAssetDependencies(v, 0);
+            });
+
+            EditorUtility.ClearProgressBar();
         }
 
-        public void OnGUI(MainWindow window)
+        public override void OnGUI(MainWindow window)
         {
             int selected = GUI.Toolbar(GetToolBarRect(window), _toolbarSelected, Enum.GetNames(typeof(AssetShowMode)));
-            if(_toolbarSelected != selected)
+            if (_toolbarSelected != selected)
             {
                 _toolbarSelected = selected;
                 RefreshTreeView(window);
@@ -89,29 +100,29 @@ namespace KA
 
         private Rect GetToolBarRect(MainWindow window)
         {
-            return new Rect(window.GetLeftSpace() + (window.ShowPipelineExpend ? 10 : 30), 5, 300, 20);
+            return new Rect(Helper.WindowParam.WorkflowBoxWidth + 30, 5, 300, 20);
         }
 
         private Rect GetDeleteBtnRect(Rect position)
         {
-            return new Rect(position.width - MainWindow.RightExpendOffset, position.height - 105, 100, 30);
+            return new Rect(position.width - Helper.WindowParam.RightExpendOffset, position.height - 105, 100, 30);
         }
 
         private void GetUselessAssets()
         {
-            var allAssets = SerializeBuildInfo.Inst.allAssetPaths;
+            var allAssets = SerializeBuildInfo.Inst.AllAssetPaths;
         }
 
         private List<AssetTreeElement> GetAssetList()
         {
             List<AssetTreeElement> elements = new List<AssetTreeElement>();
-            if(_toolbarSelected == (int)AssetShowMode.Summary)
+            if (_toolbarSelected == (int)AssetShowMode.Summary)
             {
                 elements = SerializeBuildInfo.Inst.treeList;
             }
             else if (_toolbarSelected == (int)AssetShowMode.All)
             {
-                AssetTreeHelper.ListToTree(SerializeBuildInfo.Inst.allAssetPaths, elements);
+                AssetTreeHelper.ListToTree(SerializeBuildInfo.Inst.AllAssetPaths, elements);
             }
             else if (_toolbarSelected == (int)AssetShowMode.Used)
             {
@@ -139,7 +150,7 @@ namespace KA
                     if (string.IsNullOrEmpty(item.Value.Path))
                         continue;
 
-                    if(usedGuidList.Contains(item.Key))
+                    if (usedGuidList.Contains(item.Key))
                         continue;
 
                     unuseList.Add(item.Value.Path);
@@ -151,8 +162,7 @@ namespace KA
             return elements;
         }
         private int _toolbarSelected = 0;
-
     }
-
 }
+
 
