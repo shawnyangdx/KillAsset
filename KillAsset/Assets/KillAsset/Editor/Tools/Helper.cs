@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
+﻿
 namespace KA
 {
     public class Helper
@@ -10,7 +7,6 @@ namespace KA
         {
             public static float WorkflowBoxWidth = 120;
             public static float RightExpendOffset = 110;
-
             public static float RightBoardOffset = 130;
         }
     }

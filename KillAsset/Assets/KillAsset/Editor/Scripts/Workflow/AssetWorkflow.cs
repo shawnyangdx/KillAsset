@@ -15,7 +15,7 @@ namespace KA
     }
 
     [WorkflowOverride("无用资源清理")]
-    public class UnuselessWorkflow : AssetWorkflow
+    public class UnuselessWorkflow : AssetWorkflow, IWorkflowSearch<AssetTreeElement>
     {
         public override void Run()
         {
@@ -161,6 +161,12 @@ namespace KA
 
             return elements;
         }
+
+        public bool CanSearch(AssetTreeElement t)
+        {
+            return true;
+        }
+
         private int _toolbarSelected = 0;
     }
 }

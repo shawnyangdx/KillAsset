@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 
 namespace KA
 {
@@ -12,6 +6,11 @@ namespace KA
     {
         void Run();
         void OnGUI(MainWindow window);
+    }
+
+    public interface IWorkflowSearch<T> where T : TreeElement
+    {
+        bool CanSearch(T t);
     }
 
     public class WorkflowOverrideAttribute : Attribute

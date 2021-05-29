@@ -166,7 +166,6 @@ namespace KA
         {
             if (!m_Initialized)
             {
-                // Check if it already exists (deserialized from window layout file or scriptable object)
                 if (_treeviewState == null)
                     _treeviewState = new TreeViewState();
 
@@ -185,8 +184,9 @@ namespace KA
 
                 _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
                 _treeView.Reload();
+                _treeView.onCanSearchDelegate = CanSearchDelegate;
                 _searchField = new SearchField();
-                //_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
+                _searchField.downOrUpArrowKeyPressed += _treeView.SetFocusAndEnsureSelectedItem;
 
                 m_Initialized = true;
             }
@@ -240,6 +240,11 @@ namespace KA
             {
                 EditorUtility.DisplayProgressBar("Analyze...", path, 0);
             }
+        }
+
+        private bool CanSearchDelegate(TreeElement element)
+        {
+            return false;
         }
 
         internal class WorkflowState

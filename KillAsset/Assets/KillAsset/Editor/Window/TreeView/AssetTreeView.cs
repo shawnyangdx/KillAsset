@@ -55,22 +55,11 @@ namespace KA
             {
                 Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(elements[0].Path);
             }
-            else
-            {
-                //UnityEngine.Object[] targetObjects = new Object[elements.Count];
-                //for (int i = 0; i < elements.Count; i++)
-                //{
-                //    targetObjects[i] = AssetDatabase.LoadMainAssetAtPath(elements[i].Path);
-                //}
-
-                //Selection.objects = targetObjects;
-            }
         }
 
         protected override void RowGUI(RowGUIArgs args)
         {
             var item = (TreeViewItem<AssetTreeElement>)args.item;
-
             for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
                 CellGUI(args.GetCellRect(i), item, (ColumnType)args.GetColumn(i), ref args);
@@ -83,6 +72,7 @@ namespace KA
         public List<AssetTreeElement> SelectionObjects { get { return _selectionObjects; } }
 
         #endregion
+
         void CellGUI(Rect cellRect, TreeViewItem<AssetTreeElement> item, ColumnType column, ref RowGUIArgs args)
         {
             // Center cell rect vertically (makes it easier to place controls, icons etc in the cells)

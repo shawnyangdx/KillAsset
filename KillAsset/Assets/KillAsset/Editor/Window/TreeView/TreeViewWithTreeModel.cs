@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-
+using System.Text.RegularExpressions;
 
 namespace KA
 {
@@ -36,8 +36,10 @@ namespace KA
 		public TreeModel<T> treeModel { get { return m_TreeModel; } }
 		public event Action<IList<TreeViewItem>>  beforeDroppingDraggedItems;
 
+        public delegate bool CanSearchDelegate(T t);
+        public CanSearchDelegate onCanSearchDelegate;
 
-		public TreeViewWithTreeModel (TreeViewState state, TreeModel<T> model) : base (state)
+        public TreeViewWithTreeModel (TreeViewState state, TreeModel<T> model) : base (state)
 		{
 			Init (model);
 		}
@@ -84,13 +86,10 @@ namespace KA
 			{
 				if (m_TreeModel.root.hasChildren)
                 {
-                    Debug.Log("BuildChildren");
                     AddChildrenRecursive(m_TreeModel.root, 0, m_Rows);
                 }
             }
 
-			// We still need to setup the child parent information for the rows since this 
-			// information is used by the TreeView internal logic (navigation, dragging etc)
 			SetupParentsAndChildrenFromDepths (root, m_Rows);
 
 			return m_Rows;
@@ -122,25 +121,27 @@ namespace KA
 			if (string.IsNullOrEmpty(search))
 				throw new ArgumentException("Invalid search: cannot be null or empty", "search");
 
-			const int kItemDepth = 0; // tree is flattened when searching
+            const int kItemDepth = 0; // tree is flattened when searching
 
-			Stack<T> stack = new Stack<T>();
-			foreach (var element in searchFromThis.children)
-				stack.Push((T)element);
-			while (stack.Count > 0)
-			{
-				T current = stack.Pop();
-				// Matches search?
-				if (current.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
-				{
-					result.Add(new TreeViewItem<T>(current.id, kItemDepth, current.name, current));
-				}
+            Stack<T> stack = new Stack<T>();
+            foreach (var element in searchFromThis.children)
+                stack.Push((T)element);
+            while (stack.Count > 0)
+            {
+                T current = stack.Pop();
 
-				if (current.children != null && current.children.Count > 0)
-				{
-					foreach (var element in current.children)
-					{
-						stack.Push((T)element);
+                if ((onCanSearchDelegate != null && onCanSearchDelegate(current)) ||
+                    current.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    IsValidRegex(current.name, search))
+                {
+                    result.Add(new TreeViewItem<T>(current.id, kItemDepth, current.name, current));
+                }
+
+                if (current.children != null && current.children.Count > 0)
+                {
+                    foreach (var element in current.children)
+                    {
+                        stack.Push((T)element);
 					}
 				}
 			}
@@ -161,10 +162,6 @@ namespace KA
 		{
 			return m_TreeModel.GetDescendantsThatHaveChildren(id);
 		}
-
-
-		// Dragging
-		//-----------
 	
 		const string k_GenericDragID = "GenericDragColumnDragging";
 
@@ -247,7 +244,13 @@ namespace KA
 			}
 			return true;
 		}
-	
+
+        bool IsValidRegex(string name, string pattern)
+        {
+            pattern = Regex.Replace(pattern, "[~#%&*{}/<>?|\"-]+", "");
+            var match = Regex.Match(name, pattern, RegexOptions.IgnoreCase);
+            return match.Success;
+        }
 	}
 
 }
