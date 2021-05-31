@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -6,10 +8,13 @@ using UnityEngine;
 
 namespace KA
 {
-    enum ColumnType
+    public enum ColumnType
     {
         Icon1,
         Name,
+        Path,
+        Size,
+        Ref,
     }
 
     enum AssetShowMode
@@ -34,8 +39,6 @@ namespace KA
             showBorder = true;
             customFoldoutYOffset = (20 - EditorGUIUtility.singleLineHeight) * 0.5f; // center foldout in the row since we also center content. See RowGUI
             extraSpaceBeforeIconAndLabel = _spaceLabel;
-            //multicolumnHeader.sortingChanged += OnSortingChanged;
-
         }
 
         #endregion
@@ -75,8 +78,14 @@ namespace KA
 
         void CellGUI(Rect cellRect, TreeViewItem<AssetTreeElement> item, ColumnType column, ref RowGUIArgs args)
         {
-            // Center cell rect vertically (makes it easier to place controls, icons etc in the cells)
             CenterRectUsingSingleLineHeight(ref cellRect);
+
+            Event current = Event.current;
+            if (cellRect.Contains(current.mousePosition) && current.type == EventType.ContextClick)
+            {
+                BuildGenerticMemu(item);
+                current.Use();
+            }
 
             switch (column)
             {
@@ -87,17 +96,114 @@ namespace KA
                     break;
                 case ColumnType.Name:
                     {
-                        // Do toggle
-                        // Default icon and label
-                        //var nameRect = cellRect;
-                        //nameRect.x += GetContentIndent(item);
                         args.rowRect = cellRect;
+                        base.RowGUI(args);
+                    }
+                    break;
+                case ColumnType.Path:
+                    {
+                        args.rowRect = cellRect;
+                        args.label = Path.GetDirectoryName(item.data.Path);
+                        base.RowGUI(args);
+                    }
+                    break;
+                case ColumnType.Size:
+                    {
+                        args.rowRect = cellRect;
+                        AssetSerializeInfo.Inst.guidToAsset.TryGetValue(item.data.Guid, out AssetTreeElement ele);
+                        args.label = Helper.Path.GetSize(ele != null ? ele.Size : item.data.Size);
+                        base.RowGUI(args);
+                    }
+                    break;
+                case ColumnType.Ref:
+                    {
+                        args.rowRect = cellRect;
+                        AssetSerializeInfo.Inst.guidToRef.TryGetValue(item.data.Guid, out int refCount);
+                        args.label = refCount == 0 ? "" : refCount.ToString();
                         base.RowGUI(args);
                     }
                     break;
             }
         }
 
+        void BuildGenerticMemu(TreeViewItem<AssetTreeElement> item)
+        {
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Copy Path"), false, () => 
+            {
+                EditorGUIUtility.systemCopyBuffer = item.data.Path;
+            });
+            menu.AddSeparator("");
+
+            if (_selectionObjects.Count > 0)
+            {
+                if (_selectionObjects.Count == 1)
+                {
+                    menu.AddItem(new GUIContent("Delete"), false, Delete);
+                    menu.AddItem(new GUIContent("Show In Explorer"), false, () => ShowInExlorer(_selectionObjects[0].Path));
+                }
+                else
+                {
+                    menu.AddItem(new GUIContent("Delete All"), false, Delete);
+                    menu.AddDisabledItem(new GUIContent("Show In Explorer"));
+                }
+            }
+
+            menu.ShowAsContext();
+
+        }
+
+        void Delete()
+        {
+            bool isOK = EditorUtility.DisplayDialog("Warning",
+                "Cannot revert after delete, it's recommended to delete after backup.",
+                "OK",
+                "Cancel");
+
+            if (!isOK)
+                return;
+
+            AssetTreeElement curElement = null;
+            try
+            {
+                List<AssetTreeElement> assetElements = new List<AssetTreeElement>();
+                for (int i = 0; i < SelectionObjects.Count; i++)
+                {
+                    curElement = SelectionObjects[i];
+                    var items = AssetSerializeInfo.Inst.treeList.FindAll(v => string.CompareOrdinal(v.Guid , curElement.Guid) == 0);
+                    if (items != null && items.Count > 0)
+                    {
+                        var treeData = treeModel.Data.Where(v => string.CompareOrdinal(v.Guid, curElement.Guid) == 0).ToList();
+                        if (treeData != null)
+                            treeModel.RemoveElements(treeData);
+
+                        for (int j = 0; j < items.Count; j++)
+                        {
+                            AssetSerializeInfo.Inst.treeList.Remove(items[j]);
+                            AssetSerializeInfo.Inst.AllAssetPaths.Remove(items[j].Path);
+                        }
+
+                        if (AssetSerializeInfo.Inst.guidToAsset.ContainsKey(curElement.Guid))
+                            AssetSerializeInfo.Inst.guidToAsset.Remove(curElement.Guid);
+
+                        if (AssetSerializeInfo.Inst.guidToRef.ContainsKey(curElement.Guid))
+                            AssetSerializeInfo.Inst.guidToRef.Remove(curElement.Guid);
+                    }
+
+                    AssetDatabase.DeleteAsset(SelectionObjects[i].Path);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogErrorFormat("Deleteing have mistake:{0}, Path : {1}", e.Message, curElement.Path);
+                throw e;
+            }
+        }
+
+        void ShowInExlorer(string filePath)
+        {
+            EditorUtility.RevealInFinder(filePath);
+        }
 
         private List<AssetTreeElement> _selectionObjects = new List<AssetTreeElement>();
     }

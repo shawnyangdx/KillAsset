@@ -2,17 +2,6 @@
 
 namespace KA
 {
-    public interface IWorkflow
-    {
-        void Run();
-        void OnGUI(MainWindow window);
-    }
-
-    public interface IWorkflowSearch<T> where T : TreeElement
-    {
-        bool CanSearch(T t);
-    }
-
     public class WorkflowOverrideAttribute : Attribute
     {
         public string Name { get; private set; } = "";
@@ -24,5 +13,16 @@ namespace KA
     }
 
     public class WorkflowIgnoreAttribute : Attribute { }
+
+
+    public abstract class Workflow
+    {
+        public abstract void Run();
+        public abstract void OnGUI(MainWindow window);
+
+        public virtual bool CanSearch(TreeElement t) { return false; }
+        public virtual void Sort(int columnIndex, bool isAscend) { }
+    }
+
 }
 

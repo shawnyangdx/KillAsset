@@ -15,6 +15,7 @@ namespace KA
         [SerializeField] protected Type m_assetType;
         [SerializeField] protected string m_path;
         protected string m_assetGuid;
+        protected long m_size;
 
         public static AssetTreeElement CreateRoot()
         {
@@ -22,6 +23,10 @@ namespace KA
             element.id = 0;
             element.depth = -1;
             element.name = "Root";
+            element.AssetType = element.GetType();
+            element.Path = "";
+            element.Guid = "";
+            element.Size = 0;
             return element;
         }
 
@@ -45,6 +50,13 @@ namespace KA
             set { m_assetGuid = value; }
         }
 
+        //file size , is bytes
+        public long Size
+        {
+            get { return m_size; }
+            set { m_size = value; }
+        }
+
         public Texture Icon
         {
             get
@@ -61,15 +73,6 @@ namespace KA
                 return image;
             }
         }
-
-        public List<AssetTreeElement> GetDependencies()
-        {
-            return dependencies;
-        }
-
-        public virtual void CollectDependicies() { }
-
-        public List<AssetTreeElement> dependencies = new List<AssetTreeElement>();
     }
 }
 

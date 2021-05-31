@@ -27,6 +27,8 @@ namespace KA
 			get { return m_Data.Count; }
 		}
 
+        public IList<T> Data { get { return m_Data; } }
+
 		public TreeModel (IList<T> data, T root = null)
 		{
             if(root != null)
@@ -39,8 +41,8 @@ namespace KA
 		{
 			return m_Data.FirstOrDefault (element => element.id == id);
 		}
-	
-		public void SetData (IList<T> data)
+
+        public void SetData (IList<T> data)
 		{
 			Init (data);
 		}
@@ -226,7 +228,7 @@ namespace KA
 			Changed ();
 		}
 
-		void Changed ()
+		internal void Changed ()
 		{
 			if (modelChanged != null)
 				modelChanged ();

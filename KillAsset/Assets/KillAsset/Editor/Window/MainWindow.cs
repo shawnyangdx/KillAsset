@@ -35,7 +35,7 @@ namespace KA
             if (_treeviewState == null)
                 _treeviewState = new TreeViewState();
 
-            SerializeBuildInfo.Init();
+            AssetSerializeInfo.Init();
             CollectWorkflows();
             AssetTreeHelper.onCollectDependencies = OnCollectDependenies;
         }
@@ -63,8 +63,8 @@ namespace KA
 
             }
 
-            if (_lastSelectPipeline != null)
-                _lastSelectPipeline.OnGUI(this);
+            if (_lastSelectWorkflow != null)
+                _lastSelectWorkflow.OnGUI(this);
 
             DebugSelectionInfo();
         }
@@ -86,10 +86,10 @@ namespace KA
                     if (toggleState)
                         p.Run();
 
-                    if (_lastSelectPipeline != null && _lastSelectPipeline != p)
+                    if (_lastSelectWorkflow != null && _lastSelectWorkflow != p)
                         _workflowUIData[p].toggle = false;
 
-                    _lastSelectPipeline = p;
+                    _lastSelectWorkflow = p;
                     _workflowUIData[p].toggle = toggleState;
                     InitIfNeeded();
                 }
@@ -175,16 +175,18 @@ namespace KA
                     MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
                 m_MultiColumnHeaderState = headerState;
 
-                var multiColumnHeader = new MyMultiColumnHeader(headerState);
+                var multiColumnHeader = new CustomMultiColumnHeader(headerState);
                 if (firstInit)
                     multiColumnHeader.ResizeToFit();
 
+                multiColumnHeader.sortingChanged += OnSortingChanged;
                 var root = AssetTreeElement.CreateRoot();
-                var treeModel = new TreeModel<AssetTreeElement>(SerializeBuildInfo.Inst.treeList, root);
+                var treeModel = new TreeModel<AssetTreeElement>(AssetSerializeInfo.Inst.treeList, root);
 
                 _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
                 _treeView.Reload();
                 _treeView.onCanSearchDelegate = CanSearchDelegate;
+                _treeView.treeModel.modelChanged += () => Repaint();
                 _searchField = new SearchField();
                 _searchField.downOrUpArrowKeyPressed += _treeView.SetFocusAndEnsureSelectedItem;
 
@@ -195,7 +197,7 @@ namespace KA
         private void CollectWorkflows()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var target = typeof(IWorkflow);
+            var target = typeof(Workflow);
             var list = assembly.GetTypes()
                 .Where(t => t.Namespace != null && t.Namespace.Contains("KA"))
                 .Where(t => target.IsAssignableFrom(t) && t != target)
@@ -213,7 +215,7 @@ namespace KA
                 var overrideAttr = t.GetCustomAttribute<WorkflowOverrideAttribute>(false);
                 if (overrideAttr != null)
                 {
-                    var inst = (IWorkflow)Activator.CreateInstance(t);
+                    var inst = (Workflow)Activator.CreateInstance(t);
                     _workflowUIData[inst] = new WorkflowState()
                     {
                         toggle = false,
@@ -223,7 +225,7 @@ namespace KA
                 }
                 else
                 {
-                    var inst = (IWorkflow)Activator.CreateInstance(t);
+                    var inst = (Workflow)Activator.CreateInstance(t);
                     _workflowUIData[inst] = new WorkflowState()
                     {
                         toggle = false,
@@ -244,7 +246,20 @@ namespace KA
 
         private bool CanSearchDelegate(TreeElement element)
         {
-            return false;
+            if(_lastSelectWorkflow != null)
+            {
+                return _lastSelectWorkflow.CanSearch(element);
+            }
+            return true;
+        }
+
+        private void OnSortingChanged(MultiColumnHeader multiColumnHeader)
+        {
+            if (_lastSelectWorkflow != null)
+            {
+                bool isAscend = multiColumnHeader.IsSortedAscending(multiColumnHeader.sortedColumnIndex);
+                _lastSelectWorkflow.Sort(multiColumnHeader.sortedColumnIndex, isAscend);
+            }
         }
 
         internal class WorkflowState
@@ -258,12 +273,12 @@ namespace KA
         private AssetTreeView _treeView;
         private TreeViewState _treeviewState;
         private SearchField _searchField;
-        private List<IWorkflow> _workflowes = new List<IWorkflow>();
-        private Dictionary<IWorkflow, WorkflowState> _workflowUIData = new Dictionary<IWorkflow, WorkflowState>();
-        IWorkflow _lastSelectPipeline;
+        private List<Workflow> _workflowes = new List<Workflow>();
+        private Dictionary<Workflow, WorkflowState> _workflowUIData = new Dictionary<Workflow, WorkflowState>();
+        Workflow _lastSelectWorkflow;
     }
 
-    internal class MyMultiColumnHeader : MultiColumnHeader
+    internal class CustomMultiColumnHeader : MultiColumnHeader
     {
         Mode m_Mode;
 
@@ -274,7 +289,7 @@ namespace KA
             MinimumHeaderWithoutSorting
         }
 
-        public MyMultiColumnHeader(MultiColumnHeaderState state)
+        public CustomMultiColumnHeader(MultiColumnHeaderState state)
             : base(state)
         {
             mode = Mode.DefaultHeader;

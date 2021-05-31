@@ -21,14 +21,6 @@ namespace KA
 
 	internal class TreeViewWithTreeModel<T> : TreeView where T : TreeElement
 	{
-
-//        GUIContent[] guiContents_toolbarShowSelection = new GUIContent[3]
-//{
-//                new GUIContent(AH_MultiColumnHeader.AssetShowMode.Unused.ToString(),"Show only assets that was NOT included in build"),
-//                new GUIContent(AH_MultiColumnHeader.AssetShowMode.Used.ToString(),"Show only assets that WAS included in build"),
-//                new GUIContent(AH_MultiColumnHeader.AssetShowMode.All.ToString(),"Show all assets in project")
-//};
-
         TreeModel<T> m_TreeModel;
 		readonly List<TreeViewItem> m_Rows = new List<TreeViewItem>(100);
 		public event Action treeChanged;
@@ -95,7 +87,12 @@ namespace KA
 			return m_Rows;
 		}
 
-		void AddChildrenRecursive (T parent, int depth, IList<TreeViewItem> newRows)
+        protected override void AfterRowsGUI()
+        {
+
+        }
+
+        void AddChildrenRecursive (T parent, int depth, IList<TreeViewItem> newRows)
 		{
 			foreach (T child in parent.children)
 			{
@@ -130,9 +127,9 @@ namespace KA
             {
                 T current = stack.Pop();
 
-                if ((onCanSearchDelegate != null && onCanSearchDelegate(current)) ||
-                    current.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    IsValidRegex(current.name, search))
+                if ((onCanSearchDelegate != null && onCanSearchDelegate(current)) &&
+                    (current.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    IsValidRegex(current.name, search)))
                 {
                     result.Add(new TreeViewItem<T>(current.id, kItemDepth, current.name, current));
                 }

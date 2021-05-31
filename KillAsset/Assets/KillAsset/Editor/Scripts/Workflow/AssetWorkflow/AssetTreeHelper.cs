@@ -4,6 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace KA
 {
@@ -21,7 +22,7 @@ namespace KA
                     continue;
 
                 AssetTreeElement element = CreateAssetElement(depends[i], depth + 1);
-                SerializeBuildInfo.Inst.AddItem(element);
+                AssetSerializeInfo.Inst.AddItem(element);
 
                 CollectAssetDependencies(depends[i], element.depth);
             }
@@ -31,7 +32,7 @@ namespace KA
         {
             AssetTreeElement element = new AssetTreeElement
             {
-                id = SerializeBuildInfo.Inst.BuildID,
+                id = AssetSerializeInfo.Inst.BuildID,
                 depth = depth,
                 name = Path.GetFileName(path),
                 Path = path,
@@ -44,7 +45,7 @@ namespace KA
 
         public static void ListToTree(List<string> list, List<AssetTreeElement> elements)
         {
-            SerializeBuildInfo.Inst.BuildID = 0;
+            AssetSerializeInfo.Inst.BuildID = 0;
             var root = AssetTreeElement.CreateRoot();
             elements.Add(root);
             for (int i = 0; i < list.Count; i++)
@@ -96,9 +97,46 @@ namespace KA
                     autoResize = false,
                     allowToggleVisibility = false
                 },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = new GUIContent("Path"),
+                    headerTextAlignment = TextAlignment.Left,
+                    sortedAscending = false,
+                    sortingArrowAlignment = TextAlignment.Center,
+                    width = 200,
+                    minWidth = 80,
+                    autoResize = false,
+                    allowToggleVisibility = false,
+                    canSort = true,
+                },
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = new GUIContent("Size"),
+                    headerTextAlignment = TextAlignment.Left,
+                    sortedAscending = true,
+                    sortingArrowAlignment = TextAlignment.Center,
+                    width = 80,
+                    minWidth = 60,
+                    maxWidth = 120,
+                    autoResize = false,
+                    allowToggleVisibility = false
+                },
+
+                new MultiColumnHeaderState.Column
+                {
+                    headerContent = new GUIContent("Ref"),
+                    headerTextAlignment = TextAlignment.Left,
+                    sortedAscending = true,
+                    sortingArrowAlignment = TextAlignment.Center,
+                    width = 80,
+                    minWidth = 60,
+                    maxWidth = 120,
+                    autoResize = false,
+                    allowToggleVisibility = false
+                },
             };
 
-            //Assert.AreEqual(columns.Length, Enum.GetValues(typeof(MyColumns)).Length, "Number of columns should match number of enum values: You probably forgot to update one of them.");
+            Assert.AreEqual(columns.Length, Enum.GetValues(typeof(ColumnType)).Length, "Number of columns should match number of enum values: You probably forgot to update one of them.");
 
             var state = new MultiColumnHeaderState(columns);
             return state;

@@ -10,11 +10,11 @@ using System.Linq;
 namespace KA
 {
     [Serializable]
-    public class SerializeBuildInfo
+    public class AssetSerializeInfo
     {
-        static SerializeBuildInfo _inst;
+        static AssetSerializeInfo _inst;
 
-        internal static SerializeBuildInfo Inst
+        internal static AssetSerializeInfo Inst
         {
             get
             {
@@ -28,7 +28,7 @@ namespace KA
 
         internal static void Init()
         {
-            _inst = new SerializeBuildInfo();
+            _inst = new AssetSerializeInfo();
             _inst._id = 1;
 
             _inst.AllAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
@@ -39,19 +39,18 @@ namespace KA
 
         internal int BuildID { get { return _id++; }set { _id = value; } }
 
-        internal bool HasSerialized { get { return _hasSerialized; } }
-
         internal List<string> AllAssetPaths = new List<string>();
 
         internal Dictionary<string, AssetTreeElement> guidToAsset = new Dictionary<string, AssetTreeElement>();
+
+        internal Dictionary<string, int> guidToRef = new Dictionary<string, int>();
 
         public List<AssetTreeElement> treeList = new List<AssetTreeElement>();
 
         public void Serialize(string selectPath)
         {
             string content = File.ReadAllText(selectPath);
-            _inst = JsonUtility.FromJson<SerializeBuildInfo>(content);
-            _inst._hasSerialized = true;
+            _inst = JsonUtility.FromJson<AssetSerializeInfo>(content);
         }
 
         public void AddItem(AssetTreeElement element)
@@ -60,23 +59,29 @@ namespace KA
             if(!guidToAsset.TryGetValue(element.Guid, out AssetTreeElement value))
             {
                 guidToAsset.Add(element.Guid, element);
+                CollectFileSize(element);
+                if(element.depth != 0)
+                    guidToRef.Add(element.Guid, 1);
+                else
+                    guidToRef.Add(element.Guid, 0);
             }
-        }
-
-        public string GetPathFromGuid(string guid)
-        {
-            if (guidToAsset.TryGetValue(guid, out AssetTreeElement value))
+            else
             {
-                return value.Path;
+                if (element.depth != 0)
+                    guidToRef[element.Guid]++;
             }
+        }
 
-            return "";
+        void CollectFileSize(AssetTreeElement element)
+        {
+            FileInfo info = new FileInfo(element.Path);
+            if (info != null)
+                element.Size = info.Length;
         }
 
 
-        bool _hasSerialized = false;
+
         int _id = 1;
-        bool _hasCollectAllAssets = false;
     }
 }
 
