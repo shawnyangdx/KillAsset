@@ -14,6 +14,8 @@ namespace KA
         #region static method
         private static MainWindow mainWindow;
 
+        public static MainWindow Inst { get { return mainWindow; } }
+
         [UnityEditor.MenuItem("Window/Kill Asset _%&k")]
         public static void OpenAssetHunter()
         {

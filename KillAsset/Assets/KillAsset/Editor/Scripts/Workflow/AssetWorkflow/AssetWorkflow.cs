@@ -42,7 +42,10 @@ namespace KA
                 RefreshTreeView(assetList);
             }
 
-            //DrawDeleteBtnInfo(window);
+            if (GUI.Button(GetReportBtnRect(window.position), "Report"))
+            {
+                ReportWindow.Open();
+            }
         }
 
         public override bool CanSearch(TreeElement t)
@@ -164,9 +167,14 @@ namespace KA
             return new Rect(Helper.WindowParam.WorkflowBoxWidth + 30, 5, 300, 20);
         }
 
-        private Rect GetDeleteBtnRect(Rect position)
+        private Rect GetExportBtnRect(Rect position)
         {
-            return new Rect(position.width - Helper.WindowParam.RightExpendOffset, position.height - 105, 100, 30);
+            return new Rect(position.width - Helper.WindowParam.RightExpendOffset, 5, 100, 20);
+        }
+
+        private Rect GetReportBtnRect(Rect position)
+        {
+            return new Rect(position.width - Helper.WindowParam.RightExpendOffset - 100, 5, 100, 20);
         }
 
         private void GetUselessAssets()

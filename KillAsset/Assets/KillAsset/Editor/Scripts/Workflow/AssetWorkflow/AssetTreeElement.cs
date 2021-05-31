@@ -8,7 +8,6 @@ using UnityEngine;
 
 namespace KA
 {
-
     [Serializable]
     public class AssetTreeElement : TreeElement
     {
