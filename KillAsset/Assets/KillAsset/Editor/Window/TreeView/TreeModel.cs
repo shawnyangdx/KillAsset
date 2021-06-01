@@ -31,7 +31,10 @@ namespace KA
 
 		public TreeModel (IList<T> data, T root = null)
 		{
-            if(root != null)
+            if (data.Count <= 0)
+                throw new Exception("Tree model data count is less 0.");
+
+            if (root != null)
                 data.Insert(0, root);
 
 			SetData (data);

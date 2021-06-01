@@ -32,8 +32,9 @@ namespace KA
             _inst._id = 1;
 
             _inst.AllAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
-              .Where(v => !AssetTreeHelper.IgnorePath(v))
+              .Where(v => !AssetTreeHelper.IgnoreExtension(v))
               .Select(v => FileUtil.GetProjectRelativePath(v).NormalizePath())
+              .Where(v => !AssetTreeHelper.IgnoreDirectory(v))
               .ToList();
         }
 
@@ -47,10 +48,24 @@ namespace KA
 
         public List<AssetTreeElement> treeList = new List<AssetTreeElement>();
 
+        public void Clear()
+        {
+            //first index is root.
+            treeList.RemoveRange(1, treeList.Count - 1);
+            guidToRef.Clear();
+            guidToAsset.Clear();
+            _id = 1;
+        }
+
         public void Serialize(string selectPath)
         {
             string content = File.ReadAllText(selectPath);
             _inst = JsonUtility.FromJson<AssetSerializeInfo>(content);
+        }
+
+        public void Export()
+        {
+
         }
 
         public void AddItem(AssetTreeElement element)

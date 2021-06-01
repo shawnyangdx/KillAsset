@@ -47,6 +47,16 @@ namespace KA
             AssetTreeHelper.onCollectDependencies = null;
         }
 
+        private void OnDestroy()
+        {
+            var reportWindow = GetWindow<ReportWindow>();
+            if (reportWindow != null)
+                reportWindow.Close();
+
+            if (_lastSelectWorkflow != null)
+                _lastSelectWorkflow.Clear();
+        }
+
         private void OnGUI()
         {
             DrawPipelineInfo();
@@ -66,7 +76,7 @@ namespace KA
             }
 
             if (_lastSelectWorkflow != null)
-                _lastSelectWorkflow.OnGUI(this);
+                _lastSelectWorkflow.OnGUI();
 
             DebugSelectionInfo();
         }

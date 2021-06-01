@@ -8,6 +8,7 @@ namespace KA
             public static float WorkflowBoxWidth = 120;
             public static float RightExpendOffset = 110;
             public static float RightBoardOffset = 130;
+            public static float ReportWindowMaxLine = 20;
         }
 
         public static class Path

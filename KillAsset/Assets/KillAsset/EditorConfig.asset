@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5caffa9d0b8c9cb45a792755afd4096c, type: 3}
   m_Name: EditorConfig
   m_EditorClassIdentifier: 
-  SceneRootPath: 
+  RootPath: E:/Git/Unity/KillAsset/KillAsset/Assets
   dataFileExtension: ka
   ignoreExtension:
   - .cs
   - .meta
+  ignoreDirectory:
+  - Assets/Test/Texture

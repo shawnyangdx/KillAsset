@@ -6,7 +6,7 @@ using UnityEngine;
 public class EditorConfig : ScriptableObject
 {
     private static EditorConfig _instance;
-    public static EditorConfig Instance
+    public static EditorConfig Inst
     {
         get
         {
@@ -30,9 +30,18 @@ public class EditorConfig : ScriptableObject
         return null;
     }
 
-    public string SceneRootPath = "";
+    public enum ExportType
+    {
+        Json,
+        Excel,
+    }
+
+    public string RootPath = "";
     public string dataFileExtension = ".kainfo";
 
     public List<string> ignoreExtension;
+    public List<string> ignoreDirectory;
+
+    public ExportType exportType;
 
 }

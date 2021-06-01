@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -11,30 +12,47 @@ namespace KA
     public class AssetWorkflow : Workflow
     {
         public override void Run() { }
-        public override void OnGUI(MainWindow window) { }
+        public override void OnGUI() { }
+        public override void Clear() { }
 
     }
 
-    [WorkflowOverride("无用资源清理")]
-    public class UnuselessWorkflow : AssetWorkflow
+    [WorkflowOverride("Useless Clean")]
+    public class UselessWorkflow : AssetWorkflow
     {
         public override void Run()
         {
+            List<string> checkList = null;
+            if(FileUtil.GetProjectRelativePath(EditorConfig.Inst.RootPath) != "Assets")
+            {
+                checkList = CollectRootPath();
+            }
+
             AssetSerializeInfo.Inst.AllAssetPaths.ForEach(v =>
             {
-                AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
-                AssetSerializeInfo.Inst.AddItem(element);
-
-                AssetTreeHelper.CollectAssetDependencies(v, 0);
+                if (AssetTreeHelper.TryGetDependencies(v, checkList, out List<string> depends))
+                {
+                    AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
+                    AssetSerializeInfo.Inst.AddItem(element);
+                    AssetTreeHelper.CollectAssetDependencies(depends, element.depth + 1, checkList);
+                }
             });
 
             EditorUtility.ClearProgressBar();
         }
 
-        public override void OnGUI(MainWindow window)
+        public override void OnGUI()
         {
-            _window = window;
-            int selected = GUI.Toolbar(GetToolBarRect(window), _toolbarSelected, Enum.GetNames(typeof(AssetShowMode)));
+
+            if (GUI.Button(GetReloadBtn(), EditorGUIUtility.IconContent("TreeEditor.Refresh")))
+            {
+                AssetSerializeInfo.Inst.Clear();
+                Run();
+                var assetList = GetAssetList();
+                RefreshTreeView(assetList);
+            }
+
+            int selected = GUI.Toolbar(GetToolBarRect(), _toolbarSelected, Enum.GetNames(typeof(AssetShowMode)));
             if (_toolbarSelected != selected)
             {
                 _toolbarSelected = selected;
@@ -42,10 +60,15 @@ namespace KA
                 RefreshTreeView(assetList);
             }
 
-            if (GUI.Button(GetReportBtnRect(window.position), "Report"))
+            if (GUI.Button(GetReportBtnRect(MainWindow.Inst.position), "Report"))
             {
                 ReportWindow.Open();
             }
+        }
+
+        public override void Clear()
+        {
+            AssetSerializeInfo.Inst.Clear();
         }
 
         public override bool CanSearch(TreeElement t)
@@ -61,7 +84,7 @@ namespace KA
 
         public override void Sort(int columnIndex, bool isAscend)
         {
-            List<AssetTreeElement> assetList = _window.TreeView.treeModel.Data as List<AssetTreeElement>;
+            List<AssetTreeElement> assetList = MainWindow.Inst.TreeView.treeModel.Data as List<AssetTreeElement>;
             AssetTreeElement root = assetList[0];
 
             assetList = assetList.Where(v => v.depth == 0).ToList();
@@ -143,6 +166,15 @@ namespace KA
             RefreshTreeView(assetList);
         }
 
+        List<string> CollectRootPath()
+        {
+            return Directory.GetFiles(EditorConfig.Inst.RootPath, "*.*", SearchOption.AllDirectories)
+                .Where(v => !AssetTreeHelper.IgnoreExtension(v))
+                .Select(v => FileUtil.GetProjectRelativePath(v).NormalizePath())
+                .Where(v => !AssetTreeHelper.IgnoreDirectory(v))
+                .ToList();
+        }
+
         void RebuildList(AssetTreeElement element, List<AssetTreeElement> newList)
         {
             newList.Add(element);
@@ -158,23 +190,23 @@ namespace KA
 
         private void RefreshTreeView(List<AssetTreeElement> assetList)
         {
-            _window.TreeView.treeModel.SetData(assetList);
-            _window.TreeView.Reload();
+            MainWindow.Inst.TreeView.treeModel.SetData(assetList);
+            MainWindow.Inst.TreeView.Reload();
         }
 
-        private Rect GetToolBarRect(MainWindow window)
+        private Rect GetReloadBtn()
+        {
+            return new Rect(Helper.WindowParam.WorkflowBoxWidth + 5, 5, 20, 20);
+
+        }
+        private Rect GetToolBarRect()
         {
             return new Rect(Helper.WindowParam.WorkflowBoxWidth + 30, 5, 300, 20);
         }
 
-        private Rect GetExportBtnRect(Rect position)
-        {
-            return new Rect(position.width - Helper.WindowParam.RightExpendOffset, 5, 100, 20);
-        }
-
         private Rect GetReportBtnRect(Rect position)
         {
-            return new Rect(position.width - Helper.WindowParam.RightExpendOffset - 100, 5, 100, 20);
+            return new Rect(position.width - Helper.WindowParam.RightExpendOffset, 5, 100, 20);
         }
 
         private void GetUselessAssets()
@@ -232,7 +264,6 @@ namespace KA
         }
 
         private int _toolbarSelected = 0;
-        private MainWindow _window;
     }
 }
 

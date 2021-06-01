@@ -12,19 +12,47 @@ namespace KA
     {
         public static Action<string, int> onCollectDependencies;
 
-        public static void CollectAssetDependencies(string path, int depth)
+        public static bool TryGetDependencies(
+            string path, 
+            List<string> checkList, 
+            out List<string> newDepends)
         {
-            onCollectDependencies?.Invoke(path, depth);
+            newDepends = new List<string>();
             string[] depends = AssetDatabase.GetDependencies(path, false);
+            if(depends.Length == 0)
+            {
+                return FindCheckList(checkList, path);
+            }
+
             for (int i = 0; i < depends.Length; i++)
             {
-                if (IgnorePath(depends[i]))
+                depends[i] = depends[i].NormalizePath();
+                if (IgnoreExtension(depends[i]))
                     continue;
 
-                AssetTreeElement element = CreateAssetElement(depends[i], depth + 1);
-                AssetSerializeInfo.Inst.AddItem(element);
+                if (IgnoreDirectory(depends[i]))
+                    continue;
 
-                CollectAssetDependencies(depends[i], element.depth);
+                if (FindCheckList(checkList, depends[i]))
+                {
+                    newDepends.Add(depends[i]);
+                }
+            }
+
+            return newDepends.Count > 0;
+        }
+
+        public static void CollectAssetDependencies(List<string> dependencies, int depth, List<string> checkList = null)
+        {
+            for (int i = 0; i < dependencies.Count; i++)
+            {
+                onCollectDependencies?.Invoke(dependencies[i], 0);
+                if (TryGetDependencies(dependencies[i], checkList, out List<string> depends))
+                {
+                    AssetTreeElement element = CreateAssetElement(dependencies[i], depth);
+                    AssetSerializeInfo.Inst.AddItem(element);
+                    CollectAssetDependencies(depends, element.depth + 1, checkList);
+                }
             }
         }
 
@@ -55,14 +83,36 @@ namespace KA
             }
         }
 
-        public static bool IgnorePath(string path)
+        public static bool IgnoreExtension(string path)
         {
-            List<string> list = EditorConfig.Instance.ignoreExtension;
-            string ext = Path.GetExtension(path);
+            List<string> list = EditorConfig.Inst.ignoreExtension;
+            if (list.Count == 0)
+            {
+                return false;
+            }
 
+            string ext = Path.GetExtension(path);
             for (int i = 0; i < list.Count; i++)
             {
                 if (string.CompareOrdinal(list[i], ext) == 0)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static bool IgnoreDirectory(string path)
+        {
+            List<string> list = EditorConfig.Inst.ignoreDirectory;
+            if (list.Count == 0)
+            {
+                return false;
+            }
+            string directory = Path.GetDirectoryName(path).NormalizePath();
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (string.CompareOrdinal(list[i], directory) == 0)
                     return true;
             }
 
@@ -75,7 +125,7 @@ namespace KA
             {
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "),
+                    headerContent = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), ""),
                     contextMenuText = "Asset",
                     headerTextAlignment = TextAlignment.Center,
                     sortedAscending = true,
@@ -140,6 +190,24 @@ namespace KA
 
             var state = new MultiColumnHeaderState(columns);
             return state;
+        }
+
+
+        static bool FindCheckList(List<string> checkList, string path)
+        {
+            if (checkList != null)
+            {
+                if (checkList.Contains(path))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 
