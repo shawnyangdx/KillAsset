@@ -10,7 +10,7 @@ namespace KA
 {
     public enum ColumnType
     {
-        Icon1,
+        Icon,
         Name,
         Path,
         Size,
@@ -44,19 +44,12 @@ namespace KA
         #endregion
 
         #region override method
-        protected override void SelectionChanged(IList<int> selectedIds)
+        protected override void OnSelectChanged()
         {
-            if (selectedIds.Count == 0)
-                return;
-
-            List<AssetTreeElement> elements = selectedIds.Select(v => treeModel.Find(v)).ToList();
-            if (elements.Count == 0)
-                return;
-
-            _selectionObjects = elements;
-            if (elements.Count == 1)
+            if (SelectionObjects.Count == 1)
             {
-                Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(elements[0].Path);
+                AssetTreeElement element = SelectionObjects[0];
+                Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(element.Path);
             }
         }
 
@@ -71,8 +64,6 @@ namespace KA
         #endregion
 
         #region public method
-
-        public List<AssetTreeElement> SelectionObjects { get { return _selectionObjects; } }
 
         #endregion
 
@@ -89,7 +80,7 @@ namespace KA
 
             switch (column)
             {
-                case ColumnType.Icon1:
+                case ColumnType.Icon:
                     {
                         GUI.DrawTexture(cellRect, item.data.Icon, ScaleMode.ScaleToFit);
                     }
@@ -135,12 +126,13 @@ namespace KA
             });
             menu.AddSeparator("");
 
-            if (_selectionObjects.Count > 0)
+            if (SelectionObjects.Count > 0)
             {
-                if (_selectionObjects.Count == 1)
+                if (SelectionObjects.Count == 1)
                 {
                     menu.AddItem(new GUIContent("Delete"), false, Delete);
-                    menu.AddItem(new GUIContent("Show In Explorer"), false, () => ShowInExlorer(_selectionObjects[0].Path));
+
+                    menu.AddItem(new GUIContent("Show In Explorer"), false, () => ShowInExlorer(SelectionObjects[0].Path));
                 }
                 else
                 {
@@ -190,7 +182,7 @@ namespace KA
                             AssetSerializeInfo.Inst.guidToRef.Remove(curElement.Guid);
                     }
 
-                    AssetDatabase.DeleteAsset(SelectionObjects[i].Path);
+                    AssetDatabase.DeleteAsset(curElement.Path);
                 }
             }
             catch (Exception e)
@@ -204,8 +196,6 @@ namespace KA
         {
             EditorUtility.RevealInFinder(filePath);
         }
-
-        private List<AssetTreeElement> _selectionObjects = new List<AssetTreeElement>();
     }
 
 }

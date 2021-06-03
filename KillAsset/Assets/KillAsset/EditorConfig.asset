@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: EditorConfig
   m_EditorClassIdentifier: 
   RootPath: E:/Git/Unity/KillAsset/KillAsset/Assets
-  dataFileExtension: ka
+  dataFileExtension: kainfo
   ignoreExtension:
   - .cs
   - .meta
-  ignoreDirectory:
-  - Assets/Test/Texture
+  ignoreDirectory: []
+  exportType: 1
+  OutputPath: ../Output

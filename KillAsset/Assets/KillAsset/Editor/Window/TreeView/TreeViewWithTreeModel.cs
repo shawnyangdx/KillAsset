@@ -21,6 +21,33 @@ namespace KA
 
 	internal class TreeViewWithTreeModel<T> : TreeView where T : TreeElement
 	{
+        #region construct
+        public TreeViewWithTreeModel(TreeViewState state, TreeModel<T> model) : base(state)
+        {
+            Init(model);
+        }
+
+        public TreeViewWithTreeModel(TreeViewState state, MultiColumnHeader multiColumnHeader, TreeModel<T> model)
+            : base(state, multiColumnHeader)
+        {
+            Init(model);
+        }
+
+        void Init(TreeModel<T> model)
+        {
+            m_TreeModel = model;
+            m_TreeModel.modelChanged += ModelChanged;
+        }
+
+        void ModelChanged()
+        {
+            if (treeChanged != null)
+                treeChanged();
+
+            Reload();
+        }
+        #endregion
+
         TreeModel<T> m_TreeModel;
 		readonly List<TreeViewItem> m_Rows = new List<TreeViewItem>(100);
 		public event Action treeChanged;
@@ -31,30 +58,11 @@ namespace KA
         public delegate bool CanSearchDelegate(T t);
         public CanSearchDelegate onCanSearchDelegate;
 
-        public TreeViewWithTreeModel (TreeViewState state, TreeModel<T> model) : base (state)
-		{
-			Init (model);
-		}
+        private List<T> _selectionObjects = new List<T>();
+        public List<T> SelectionObjects { get { return _selectionObjects; } }
 
-		public TreeViewWithTreeModel (TreeViewState state, MultiColumnHeader multiColumnHeader, TreeModel<T> model)
-			: base(state, multiColumnHeader)
-		{
-            Init (model);
-		}
+        protected virtual void OnSelectChanged() { }
 
-		void Init (TreeModel<T> model)
-		{
-			m_TreeModel = model;
-			m_TreeModel.modelChanged += ModelChanged;
-		}
-
-		void ModelChanged ()
-		{
-			if (treeChanged != null)
-				treeChanged ();
-
-			Reload ();
-		}
 
         protected override TreeViewItem BuildRoot()
 		{
@@ -87,9 +95,17 @@ namespace KA
 			return m_Rows;
 		}
 
-        protected override void AfterRowsGUI()
+        protected override void SelectionChanged(IList<int> selectedIds)
         {
+            if (selectedIds.Count == 0)
+                return;
 
+            List<T> elements = selectedIds.Select(v => m_TreeModel.Find(v)).ToList();
+            if (elements.Count == 0)
+                return;
+
+            _selectionObjects = elements;
+            OnSelectChanged();
         }
 
         void AddChildrenRecursive (T parent, int depth, IList<TreeViewItem> newRows)
@@ -248,6 +264,7 @@ namespace KA
             var match = Regex.Match(name, pattern, RegexOptions.IgnoreCase);
             return match.Success;
         }
-	}
+
+    }
 
 }

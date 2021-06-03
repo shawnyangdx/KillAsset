@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.Build.Reporting;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.IO;
-using System.Linq;
+using System.Text;
 
 namespace KA
 {
@@ -31,11 +28,7 @@ namespace KA
             _inst = new AssetSerializeInfo();
             _inst._id = 1;
 
-            _inst.AllAssetPaths = Directory.GetFiles(Application.dataPath, "*.*", SearchOption.AllDirectories)
-              .Where(v => !AssetTreeHelper.IgnoreExtension(v))
-              .Select(v => FileUtil.GetProjectRelativePath(v).NormalizePath())
-              .Where(v => !AssetTreeHelper.IgnoreDirectory(v))
-              .ToList();
+            _inst.AllAssetPaths = Helper.Path.CollectAssetPaths(Application.dataPath);
         }
 
         internal int BuildID { get { return _id++; }set { _id = value; } }
@@ -45,46 +38,85 @@ namespace KA
         internal Dictionary<string, AssetTreeElement> guidToAsset = new Dictionary<string, AssetTreeElement>();
 
         internal Dictionary<string, int> guidToRef = new Dictionary<string, int>();
+        //use for calculate reference.
+        internal HashSet<string> guidRefSet = new HashSet<string>();
 
         public List<AssetTreeElement> treeList = new List<AssetTreeElement>();
 
         public void Clear()
         {
-            //first index is root.
-            treeList.RemoveRange(1, treeList.Count - 1);
-            guidToRef.Clear();
+            treeList.Clear();
             guidToAsset.Clear();
+            guidRefSet.Clear();
             _id = 1;
-        }
-
-        public void Serialize(string selectPath)
-        {
-            string content = File.ReadAllText(selectPath);
-            _inst = JsonUtility.FromJson<AssetSerializeInfo>(content);
         }
 
         public void Export()
         {
-
-        }
-
-        public void AddItem(AssetTreeElement element)
-        {
-            treeList.Add(element);
-            if(!guidToAsset.TryGetValue(element.Guid, out AssetTreeElement value))
+            string content = "";
+            Encoding targetEncoding;
+            if (EditorConfig.Inst.exportType == EditorConfig.ExportType.Json)
             {
-                guidToAsset.Add(element.Guid, element);
-                CollectFileSize(element);
-                if(element.depth != 0)
-                    guidToRef.Add(element.Guid, 1);
-                else
-                    guidToRef.Add(element.Guid, 0);
+                content = JsonUtility.ToJson(this);
+                targetEncoding = Encoding.UTF8;
             }
             else
             {
-                if (element.depth != 0)
-                    guidToRef[element.Guid]++;
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < Enum.GetNames(typeof(ColumnType)).Length; i++)
+                {
+                    sb.Append((ColumnType)i);
+                    sb.Append("\t");
+                }
+
+                content = sb.ToString();
+                targetEncoding = Encoding.GetEncoding("GB2312");
             }
+
+            string targetPath = Path.Combine(Application.dataPath, EditorConfig.Inst.OutputPath);
+            if (!Directory.Exists(targetPath))
+            {
+                Directory.CreateDirectory(targetPath);
+            }
+
+            string path = string.Format("{0}/{1}_{2}{3}{4}_{5}{6}.{7}",
+                          targetPath,
+                          Application.platform,
+                          DateTime.Now.Year,
+                          DateTime.Now.Month,
+                          DateTime.Now.Day,
+                          DateTime.Now.Hour,
+                          DateTime.Now.Minute,
+                          EditorConfig.Inst.dataFileExtension);
+
+            File.WriteAllText(path, content, targetEncoding);
+        }
+
+        public void AddItem(AssetTreeElement element, bool isRoot = false, bool incRef = false)
+        {
+            treeList.Add(element);
+            if (isRoot)
+                return;
+
+            if (!guidToAsset.TryGetValue(element.Guid, out AssetTreeElement value))
+            {
+                guidToAsset.Add(element.Guid, element);
+                CollectFileSize(element);
+                guidToRef[element.Guid] = 0;
+            }
+
+            if (incRef && guidRefSet.Add(element.Guid))
+            {
+                if (!guidToRef.TryGetValue(element.Guid, out int val))
+                {
+                    guidToRef.Add(element.Guid, 1);
+                }
+                else
+                {
+                    guidToRef[element.Guid]++;
+                }
+            }
+
         }
 
         void CollectFileSize(AssetTreeElement element)

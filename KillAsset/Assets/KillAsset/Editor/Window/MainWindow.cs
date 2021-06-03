@@ -37,7 +37,6 @@ namespace KA
             if (_treeviewState == null)
                 _treeviewState = new TreeViewState();
 
-            AssetSerializeInfo.Init();
             CollectWorkflows();
             AssetTreeHelper.onCollectDependencies = OnCollectDependenies;
         }
@@ -49,10 +48,6 @@ namespace KA
 
         private void OnDestroy()
         {
-            var reportWindow = GetWindow<ReportWindow>();
-            if (reportWindow != null)
-                reportWindow.Close();
-
             if (_lastSelectWorkflow != null)
                 _lastSelectWorkflow.Clear();
         }
@@ -61,24 +56,28 @@ namespace KA
         {
             DrawPipelineInfo();
 
-            if (_treeView == null)
+            if (_lastSelectWorkflow == null)
                 return;
 
-            if (_treeView.treeModel.numberOfDataElements == 0)
-                return;
+            var baseRect = GetBaseRect();
+            _lastSelectWorkflow.GuiOptions.onTopGUICallback?.Invoke(ref baseRect);
 
-            _treeView.searchString = _searchField.OnGUI(GetSearchRect(), _treeView.searchString);
-            _treeView.OnGUI(GetTreeViewRect());
-
-            if (GUI.Button(GetExportBtnRect(), "Export", EditorStyles.miniButton))
+            if (_lastSelectWorkflow.GuiOptions.showSearchField)
             {
-
+                var searchRect = baseRect;
+                baseRect.y += 1;
+                baseRect.height = 30;
+                _treeView.searchString = _searchField.OnGUI(baseRect, _treeView.searchString);
+                baseRect.y = searchRect.y;
+                baseRect.height = searchRect.height;
+                baseRect.y += 24;
+                baseRect.height -= 24;
             }
 
-            if (_lastSelectWorkflow != null)
-                _lastSelectWorkflow.OnGUI();
+            _lastSelectWorkflow.GuiOptions.onBottomGUICallback?.Invoke(ref baseRect);
+            _treeView.OnGUI(baseRect);
 
-            DebugSelectionInfo();
+            DebugSelectionInfo(ref baseRect);
         }
 
         private void DrawPipelineInfo()
@@ -96,72 +95,53 @@ namespace KA
                 if (_workflowUIData[p].toggle != toggleState)
                 {
                     if (toggleState)
+                    {
                         p.Run();
 
-                    if (_lastSelectWorkflow != null && _lastSelectWorkflow != p)
-                        _workflowUIData[p].toggle = false;
+                        if (_lastSelectWorkflow != null && _lastSelectWorkflow != p)
+                            _workflowUIData[p].toggle = false;
 
-                    _lastSelectWorkflow = p;
-                    _workflowUIData[p].toggle = toggleState;
-                    InitIfNeeded();
+                        _lastSelectWorkflow = p;
+                        _workflowUIData[p].toggle = toggleState;
+                        InitIfNeeded();
+                    }
+                    else
+                    {
+                        if (_lastSelectWorkflow != null)
+                        {
+                            _lastSelectWorkflow.Clear();
+                            _lastSelectWorkflow = null;
+                        }
+
+                        _workflowUIData[p].toggle = toggleState;
+                    }
                 }
             }
         }
 
-        private void DebugSelectionInfo()
+        private void DebugSelectionInfo(ref Rect baseRect)
         {
             if (_treeView == null || !_treeView.HasSelection())
                 return;
 
-            var objectList = _treeView.SelectionObjects;
-            if(objectList.Count == 1)
-            {
-                var obj = objectList[0];
-                if (obj.Icon != null)
-                {
-                    GUI.DrawTexture(new Rect(HP.WorkflowBoxWidth, position.height - 105, 80, 80), obj.Icon);
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth + 80, position.height - 105, position.width / 2, 20), "Info:");
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth + 80, position.height - 85, position.width / 2, 20), objectList[0].Path);
-                }
-                else
-                {
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth, position.height - 105, position.width / 2, 20), "Info:");
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth, position.height - 85, position.width / 2, 20), objectList[0].Path);
-                }
-            }
-            else
-            {
-                string msg = string.Format("Select {{{0}}} Items", objectList.Count);
-                GUI.Label(new Rect(HP.WorkflowBoxWidth, position.height - 105, position.width / 2, 20), msg);
-            }
+            if (_lastSelectWorkflow == null)
+                return;
+
+            List<TreeElement> list = new List<TreeElement>(_treeView.SelectionObjects);
+            _lastSelectWorkflow.GuiOptions.onSelectionGUICallback(ref baseRect, list);
         }
 
-        private Rect GetIndentButtonRect()
+        private Rect GetBaseRect()
         {
-            return new Rect(10, 5, 20, 20);
-        }
-
-        private Rect GetPipelineGroupRect(int index)
-        {
-            return new Rect(10, 30 + 22 * index, 100, 20);
+            return new Rect(
+                HP.WorkflowBoxWidth, 5, 
+                position.width - HP.RightBoardOffset, 
+                position.height - HP.BottomBoardOffset);
         }
 
         private Rect GetWorkflowButtonRect(int index)
         {
             return new Rect(8, 8 + 22 * index, 102, 20);
-        }
-
-        private Rect GetSearchRect()
-        {
-            return new Rect(HP.WorkflowBoxWidth, 30, position.width - HP.RightBoardOffset, 30);
-        }
- 
-        private Rect GetTreeViewRect()
-        {
-            if (_treeView != null && _treeView.HasSelection())
-                return new Rect(HP.WorkflowBoxWidth, 50, position.width - HP.RightBoardOffset, position.height - 160);
-
-            return new Rect(HP.WorkflowBoxWidth, 50, position.width - HP.RightBoardOffset, position.height - 100);
         }
 
         private Rect GetExportBtnRect()
@@ -182,7 +162,7 @@ namespace KA
                     _treeviewState = new TreeViewState();
 
                 bool firstInit = m_MultiColumnHeaderState == null;
-                var headerState = AssetTreeHelper.CreateDefaultMultiColumnHeaderState(GetTreeViewRect().width);
+                var headerState = AssetTreeHelper.CreateDefaultMultiColumnHeaderState();
                 if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
                     MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
                 m_MultiColumnHeaderState = headerState;
@@ -192,8 +172,9 @@ namespace KA
                     multiColumnHeader.ResizeToFit();
 
                 multiColumnHeader.sortingChanged += OnSortingChanged;
+
                 var root = AssetTreeElement.CreateRoot();
-                var treeModel = new TreeModel<AssetTreeElement>(AssetSerializeInfo.Inst.treeList, root);
+                var treeModel = new TreeModel<AssetTreeElement>(AssetSerializeInfo.Inst.treeList);
 
                 _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
                 _treeView.Reload();

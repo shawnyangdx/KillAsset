@@ -50,7 +50,7 @@ namespace KA
                 if (TryGetDependencies(dependencies[i], checkList, out List<string> depends))
                 {
                     AssetTreeElement element = CreateAssetElement(dependencies[i], depth);
-                    AssetSerializeInfo.Inst.AddItem(element);
+                    AssetSerializeInfo.Inst.AddItem(element, incRef: true);
                     CollectAssetDependencies(depends, element.depth + 1, checkList);
                 }
             }
@@ -119,7 +119,7 @@ namespace KA
             return false;
         }
 
-        public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState(float treeViewWidth)
+        public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState()
         {
             var columns = new[]
             {

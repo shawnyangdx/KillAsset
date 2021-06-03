@@ -44,4 +44,6 @@ public class EditorConfig : ScriptableObject
 
     public ExportType exportType;
 
+    public string OutputPath = "";
+
 }

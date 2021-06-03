@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
+using System.IO;
 
 namespace KA
 {
@@ -10,31 +11,58 @@ namespace KA
         EditorConfig script;
         private ReorderableList ignoreExtList;
         private ReorderableList ignoreFileList;
+        SerializedProperty RootPathProperty;
+        SerializedProperty OutputPathProperty;
+        SerializedProperty outputExtProperty;
+        SerializedProperty exportProperty;
+
+        static GUIContent outoutPathContent = new GUIContent
+        {
+            text = "Output Path:",
+            tooltip = "output path is relative path according to the Application.dataPath",
+        };
 
         private void OnEnable()
         {
             script = (EditorConfig)target;
 
+            RootPathProperty = serializedObject.FindProperty("RootPath");
+            OutputPathProperty = serializedObject.FindProperty("OutputPath");
+            outputExtProperty = serializedObject.FindProperty("dataFileExtension");
+            exportProperty = serializedObject.FindProperty("exportType");
             ignoreExtList = InitOrderableList(serializedObject, serializedObject.FindProperty("ignoreExtension"), "Ignore Extension");
             ignoreFileList = InitOrderableList(serializedObject, serializedObject.FindProperty("ignoreDirectory"), "Ignore Directory(Relative Path)");
         }
 
         public override void OnInspectorGUI()
         {
+            script = (EditorConfig)target;
             if (GUILayout.Button("Root Path", GUILayout.Width(80f)))
             {
-                script.RootPath = EditorUtility.OpenFolderPanel("Select Path", script.RootPath, "");
+                var path = EditorUtility.OpenFolderPanel("Select Path", RootPathProperty.stringValue, "");
+                if(!string.IsNullOrEmpty(path))
+                {
+                    RootPathProperty.stringValue = path;
+                }
             }
 
             EditorGUILayout.LabelField(FileUtil.GetProjectRelativePath(script.RootPath).NormalizePath());
             GuiLine();
 
+            EditorGUILayout.LabelField("Ignore Settings:", EditorStyles.boldLabel);
             ignoreExtList.DoLayoutList();
             EditorGUILayout.Space();
             ignoreFileList.DoLayoutList();
             GuiLine();
 
-            script.exportType = (EditorConfig.ExportType)EditorGUILayout.EnumPopup("ExportType", script.exportType);
+            EditorGUILayout.LabelField("Export:", EditorStyles.boldLabel);
+            EditorConfig.ExportType eType = (EditorConfig.ExportType)EditorGUILayout.EnumPopup("ExportType", (EditorConfig.ExportType)exportProperty.enumValueIndex);
+            if((int)eType != exportProperty.enumValueIndex)
+            {
+                exportProperty.enumValueIndex = (int)eType;
+            }
+            outputExtProperty.stringValue = EditorGUILayout.TextField("Output Extension:", outputExtProperty.stringValue);
+            OutputPathProperty.stringValue = EditorGUILayout.TextField(outoutPathContent, OutputPathProperty.stringValue);
             serializedObject.ApplyModifiedProperties();
         }
 
