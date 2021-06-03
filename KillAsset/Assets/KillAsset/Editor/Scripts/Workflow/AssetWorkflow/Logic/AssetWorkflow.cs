@@ -191,18 +191,22 @@ namespace KA
             MainWindow.Inst.TreeView.Reload();
         }
 
-        private List<AssetTreeElement> GetAssetList()
+        private List<AssetTreeElement> GetAssetList(int targetSelected = -1)
         {
+            int toolbarSelectIndex = _toolbarSelected;
+            if (targetSelected > 0)
+                toolbarSelectIndex = targetSelected;
+
             List<AssetTreeElement> elements = new List<AssetTreeElement>();
-            if (_toolbarSelected == (int)AssetShowMode.Summary)
+            if (toolbarSelectIndex == (int)AssetShowMode.Summary)
             {
                 elements = AssetSerializeInfo.Inst.treeList;
             }
-            else if (_toolbarSelected == (int)AssetShowMode.All)
+            else if (toolbarSelectIndex == (int)AssetShowMode.All)
             {
                 AssetTreeHelper.ListToTree(AssetSerializeInfo.Inst.AllAssetPaths, elements);
             }
-            else if (_toolbarSelected == (int)AssetShowMode.Used)
+            else if (toolbarSelectIndex == (int)AssetShowMode.Used)
             {
                 if(usedListCache == null)
                 {
@@ -278,12 +282,15 @@ namespace KA
             topRect.width = 100;
             if (GUI.Button(topRect, "Export"))
             {
-                AssetSerializeInfo.Inst.Export();
+                for (int i = 0; i < Enum.GetNames(typeof(AssetShowMode)).Length; i++)
+                {
+                    var assetList = GetAssetList(i);
+                    AssetSerializeInfo.Inst.Export(assetList, ((AssetShowMode)i).ToString());
+                }
             }
 
             rect.y += 25;
             rect.height -= 25;
-
         }
 
         private void OnSelectionGUICallback(ref Rect rect, List<TreeElement> elements)

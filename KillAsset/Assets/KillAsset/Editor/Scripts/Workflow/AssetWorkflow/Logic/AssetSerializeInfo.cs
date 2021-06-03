@@ -51,14 +51,14 @@ namespace KA
             _id = 1;
         }
 
-        public void Export()
+        public void Export(List<AssetTreeElement> list, string fileAlias = "")
         {
             string content = "";
-            Encoding targetEncoding;
+            Encoding targetEncoding = Encoding.UTF8;
             if (EditorConfig.Inst.exportType == EditorConfig.ExportType.Json)
             {
-                content = JsonUtility.ToJson(this);
-                targetEncoding = Encoding.UTF8;
+                //content = JsonUtility.ToJson(list);
+                //targetEncoding = Encoding.UTF8;
             }
             else
             {
@@ -67,6 +67,32 @@ namespace KA
                 {
                     sb.Append((ColumnType)i);
                     sb.Append("\t");
+                }
+                sb.Append("\n");
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    sb.Append(list[i].AssetType);
+                    sb.Append("\t");
+                    sb.Append(list[i].name);
+                    sb.Append("\t");
+                    sb.Append(list[i].Path);
+                    sb.Append("\t");
+                    sb.Append(list[i].Size);
+                    sb.Append("\t");
+
+                    if(guidToRef.TryGetValue(list[i].Guid, out int val) && val > 0)
+                    {
+                        sb.Append(val);
+                        sb.Append("\t");
+                    }
+                    else
+                    {
+                        sb.Append(0);
+                        sb.Append("\t");
+                    }
+
+                    sb.Append("\n");
                 }
 
                 content = sb.ToString();
@@ -79,9 +105,10 @@ namespace KA
                 Directory.CreateDirectory(targetPath);
             }
 
-            string path = string.Format("{0}/{1}_{2}{3}{4}_{5}{6}.{7}",
+            string path = string.Format("{0}/{1}_{2}_{3}{4}{5}_{6}{7}.{8}",
                           targetPath,
                           Application.platform,
+                          fileAlias,
                           DateTime.Now.Year,
                           DateTime.Now.Month,
                           DateTime.Now.Day,
