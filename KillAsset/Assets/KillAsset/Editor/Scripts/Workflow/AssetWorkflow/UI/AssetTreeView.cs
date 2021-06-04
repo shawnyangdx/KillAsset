@@ -144,7 +144,6 @@ namespace KA
             }
 
             menu.ShowAsContext();
-
         }
 
         void Delete()

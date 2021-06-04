@@ -63,6 +63,10 @@ namespace KA
 
         protected virtual void OnSelectChanged() { }
 
+        protected virtual string OnGetShowName(T t)
+        {
+            return t.name;
+        }
 
         protected override TreeViewItem BuildRoot()
 		{
@@ -112,7 +116,7 @@ namespace KA
 		{
 			foreach (T child in parent.children)
 			{
-				var item = new TreeViewItem<T>(child.id, depth, child.name, child);
+				var item = new TreeViewItem<T>(child.id, depth, OnGetShowName(child), child);
 				newRows.Add(item);
 
 				if (child.hasChildren)
@@ -147,7 +151,7 @@ namespace KA
                     (current.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
                     IsValidRegex(current.name, search)))
                 {
-                    result.Add(new TreeViewItem<T>(current.id, kItemDepth, current.name, current));
+                    result.Add(new TreeViewItem<T>(current.id, kItemDepth, OnGetShowName(current), current));
                 }
 
                 if (current.children != null && current.children.Count > 0)
