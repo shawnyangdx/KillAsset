@@ -44,6 +44,11 @@ namespace KA
         #endregion
 
         #region override method
+        protected override bool CanSearch(string search, AssetTreeElement t)
+        {
+            return (base.CanSearch(search, t) || IsValidRegex(t.Path, search)) && t.depth == 0;
+        }
+
         protected override void OnSelectChanged()
         {
             if (SelectionObjects.Count == 1)
@@ -96,7 +101,7 @@ namespace KA
                 case ColumnType.Path:
                     {
                         args.rowRect = cellRect;
-                        args.label = Path.GetDirectoryName(item.data.Path);
+                        args.label = Path.GetDirectoryName(item.data.Path).NormalizePath();
                         base.RowGUI(args);
                     }
                     break;

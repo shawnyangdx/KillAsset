@@ -123,7 +123,7 @@ namespace KA
 
             for (int i = 0; i < list.Count; i++)
             {
-                if (string.CompareOrdinal(list[i], directory) == 0)
+                if (directory.IndexOf(list[i]) >= 0)
                     return true;
             }
 

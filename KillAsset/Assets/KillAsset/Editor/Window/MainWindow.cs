@@ -179,7 +179,6 @@ namespace KA
 
                 _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
                 _treeView.Reload();
-                _treeView.onCanSearchDelegate = CanSearchDelegate;
                 _treeView.treeModel.modelChanged += () => Repaint();
                 _searchField = new SearchField();
                 _searchField.downOrUpArrowKeyPressed += _treeView.SetFocusAndEnsureSelectedItem;
@@ -236,15 +235,6 @@ namespace KA
             {
                 EditorUtility.DisplayProgressBar("Analyze...", path, 0);
             }
-        }
-
-        private bool CanSearchDelegate(TreeElement element)
-        {
-            if(_lastSelectWorkflow != null)
-            {
-                return _lastSelectWorkflow.CanSearch(element);
-            }
-            return true;
         }
 
         private void OnSortingChanged(MultiColumnHeader multiColumnHeader)

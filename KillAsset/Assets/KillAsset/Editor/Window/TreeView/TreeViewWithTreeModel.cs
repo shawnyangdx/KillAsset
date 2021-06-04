@@ -55,9 +55,6 @@ namespace KA
 		public TreeModel<T> treeModel { get { return m_TreeModel; } }
 		public event Action<IList<TreeViewItem>>  beforeDroppingDraggedItems;
 
-        public delegate bool CanSearchDelegate(T t);
-        public CanSearchDelegate onCanSearchDelegate;
-
         private List<T> _selectionObjects = new List<T>();
         public List<T> SelectionObjects { get { return _selectionObjects; } }
 
@@ -66,6 +63,11 @@ namespace KA
         protected virtual string OnGetShowName(T t)
         {
             return t.name;
+        }
+
+        protected virtual bool CanSearch(string search, T t)
+        {
+            return t.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 || IsValidRegex(t.name, search);
         }
 
         protected override TreeViewItem BuildRoot()
@@ -147,9 +149,7 @@ namespace KA
             {
                 T current = stack.Pop();
 
-                if ((onCanSearchDelegate != null && onCanSearchDelegate(current)) &&
-                    (current.name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    IsValidRegex(current.name, search)))
+                if (CanSearch(search, current))
                 {
                     result.Add(new TreeViewItem<T>(current.id, kItemDepth, OnGetShowName(current), current));
                 }
@@ -162,7 +162,7 @@ namespace KA
 					}
 				}
 			}
-			SortSearchResult(result);
+			//SortSearchResult(result);
 		}
 
 		protected virtual void SortSearchResult (List<TreeViewItem> rows)
@@ -262,7 +262,7 @@ namespace KA
 			return true;
 		}
 
-        bool IsValidRegex(string name, string pattern)
+        protected bool IsValidRegex(string name, string pattern)
         {
             pattern = Regex.Replace(pattern, "[~#%&*{}/<>?|\"-]+", "");
             var match = Regex.Match(name, pattern, RegexOptions.IgnoreCase);
