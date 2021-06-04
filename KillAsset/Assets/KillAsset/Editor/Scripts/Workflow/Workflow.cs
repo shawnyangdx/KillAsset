@@ -32,7 +32,7 @@ namespace KA
             public OnSelectGUI<TreeElement> onSelectionGUICallback;
 
             public delegate void OnCustomGUI(ref Rect rect);
-            public delegate void OnSelectGUI<T>(ref Rect rect, List<T> elements) where T : TreeElement;
+            public delegate void OnSelectGUI<T>(ref Rect rect, List<T> elements, bool lastChanged) where T : TreeElement;
         }
 
         public virtual GUIOptions GuiOptions { get; } = new GUIOptions();

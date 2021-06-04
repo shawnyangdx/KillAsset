@@ -34,9 +34,6 @@ namespace KA
 
         private void OnEnable()
         {
-            if (_treeviewState == null)
-                _treeviewState = new TreeViewState();
-
             CollectWorkflows();
             AssetTreeHelper.onCollectDependencies = OnCollectDependenies;
         }
@@ -67,9 +64,11 @@ namespace KA
                 var searchRect = baseRect;
                 baseRect.y += 1;
                 baseRect.height = 30;
+                baseRect.width = position.width - HP.RightBoardOffset;
                 _treeView.searchString = _searchField.OnGUI(baseRect, _treeView.searchString);
                 baseRect.y = searchRect.y;
                 baseRect.height = searchRect.height;
+                baseRect.width = searchRect.width;
                 baseRect.y += 24;
                 baseRect.height -= 24;
             }
@@ -127,8 +126,11 @@ namespace KA
             if (_lastSelectWorkflow == null)
                 return;
 
-            List<TreeElement> list = new List<TreeElement>(_treeView.SelectionObjects);
-            _lastSelectWorkflow.GuiOptions.onSelectionGUICallback(ref baseRect, list);
+            if(_treeView.LastSelectChanged)
+                _selectObjects = new List<TreeElement>(_treeView.SelectionObjects);
+
+            _lastSelectWorkflow.GuiOptions.onSelectionGUICallback(ref baseRect, _selectObjects, _treeView.LastSelectChanged);
+            _treeView.LastSelectChanged = false;
         }
 
         private Rect GetBaseRect()
@@ -173,7 +175,6 @@ namespace KA
 
                 multiColumnHeader.sortingChanged += OnSortingChanged;
 
-                var root = AssetTreeElement.CreateRoot();
                 var treeModel = new TreeModel<AssetTreeElement>(AssetSerializeInfo.Inst.treeList);
 
                 _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
@@ -269,6 +270,7 @@ namespace KA
         private List<Workflow> _workflowes = new List<Workflow>();
         private Dictionary<Workflow, WorkflowState> _workflowUIData = new Dictionary<Workflow, WorkflowState>();
         Workflow _lastSelectWorkflow;
+        private List<TreeElement> _selectObjects;
     }
 
     internal class CustomMultiColumnHeader : MultiColumnHeader

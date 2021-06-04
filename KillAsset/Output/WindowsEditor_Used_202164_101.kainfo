@@ -1,0 +1,6 @@
+Icon	Name	Path	Size	Ref	
+KA.AssetTreeElement	Root		0	0	
+UnityEngine.Font	VeraMono.ttf	Assets/Test/VeraMono.ttf	48	1	
+UnityEngine.GameObject	texPrefab.prefab	Assets/Test/Prefabs/texPrefab.prefab	2	1	
+UnityEngine.Texture2D	xiansuo_lianxian_hei.png	Assets/Test/Texture/xiansuo_lianxian_hei.png	1	2	
+UnityEngine.Texture2D	yincang_biaoti.png	Assets/Test/Texture/yincang_biaoti.png	5	1	

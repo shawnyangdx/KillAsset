@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace KA
 {
@@ -14,7 +15,8 @@ namespace KA
             public static float RightExpendOffset = 110;
             public static float RightBoardOffset = 130;
             public static float BottomBoardOffset = 10;
-            public static float ReportWindowMaxLine = 20;
+
+            public static float SelectionInfoHeight = 120;
         }
 
         public static class Path
@@ -34,6 +36,14 @@ namespace KA
                     float size = bytes / 1024.0f / 1024.0f;
                     return string.Format("{0:F1}mb", size);
                 }
+            }
+
+            public static long GetKBSize(long bytes)
+            {
+                if (bytes <= 0)
+                    return 0;
+
+                return Mathf.FloorToInt(bytes / 1024.0f);
             }
 
             public static List<string> CollectAssetPaths(string rootPath)

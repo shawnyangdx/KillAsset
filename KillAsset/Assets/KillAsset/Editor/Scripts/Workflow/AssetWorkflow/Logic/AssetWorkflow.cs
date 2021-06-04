@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using HP = KA.Helper.WindowParam;
 
@@ -36,15 +37,15 @@ namespace KA
             }
 
             var root = AssetTreeElement.CreateRoot();
-            AssetSerializeInfo.Inst.AddItem(root, true);
+            AssetSerializeInfo.Inst.AddDependenceItem(root, true);
             AssetSerializeInfo.Inst.AllAssetPaths.ForEach(v =>
             {
                 AssetSerializeInfo.Inst.guidRefSet.Clear();
                 if (AssetTreeHelper.TryGetDependencies(v, checkList, out List<string> depends))
                 {
                     AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
-                    AssetSerializeInfo.Inst.AddItem(element);
-                    AssetTreeHelper.CollectAssetDependencies(depends, element.depth + 1, checkList);
+                    AssetSerializeInfo.Inst.AddDependenceItem(element);
+                    AssetTreeHelper.CollectAssetDependencies(v, depends, element.depth + 1, checkList);
                 }
             });
 
@@ -135,9 +136,9 @@ namespace KA
                     assetList.Sort((l, r) =>
                     {
                         var dic = AssetSerializeInfo.Inst.guidToRef;
-                        dic.TryGetValue(l.Guid, out int lr);
-                        dic.TryGetValue(r.Guid, out int rr);
-                        return lr.CompareTo(rr);
+                        int lVal = dic.TryGetValue(l.Guid, out List<string> lr) ? lr.Count : 0;
+                        int rVal = dic.TryGetValue(r.Guid, out List<string> rr) ? rr.Count : 0;
+                        return lVal.CompareTo(rVal);
                     }
                     );
                 }
@@ -146,9 +147,9 @@ namespace KA
                     assetList.Sort((l, r) =>
                     {
                         var dic = AssetSerializeInfo.Inst.guidToRef;
-                        dic.TryGetValue(l.Guid, out int lr);
-                        dic.TryGetValue(r.Guid, out int rr);
-                        return -lr.CompareTo(rr);
+                        int lVal = dic.TryGetValue(l.Guid, out List<string> lr) ? lr.Count : 0;
+                        int rVal = dic.TryGetValue(r.Guid, out List<string> rr) ? rr.Count : 0;
+                        return -lVal.CompareTo(rVal);
                     }
                    );
                 }
@@ -204,7 +205,14 @@ namespace KA
             }
             else if (toolbarSelectIndex == (int)AssetShowMode.All)
             {
-                AssetTreeHelper.ListToTree(AssetSerializeInfo.Inst.AllAssetPaths, elements);
+                AssetTreeHelper.ListToTree(AssetSerializeInfo.Inst.AllAssetPaths, elements, e => 
+                {
+                    if (!AssetSerializeInfo.Inst.guidToAsset.TryGetValue(e.Guid, out AssetTreeElement value))
+                    {
+                        AssetSerializeInfo.Inst.guidToAsset.Add(e.Guid, e);
+                        AssetTreeHelper.CollectFileSize(e);
+                    }
+                });
             }
             else if (toolbarSelectIndex == (int)AssetShowMode.Used)
             {
@@ -213,7 +221,7 @@ namespace KA
                     usedListCache = new List<string>();
                     foreach (var item in AssetSerializeInfo.Inst.guidToRef)
                     {
-                        if (item.Value <= 0)
+                        if (item.Value.Count <= 0)
                             continue;
 
                         if (AssetSerializeInfo.Inst.guidToAsset.TryGetValue(item.Key, out AssetTreeElement ele))
@@ -232,7 +240,7 @@ namespace KA
                     uselessListCache = new List<string>();
                     foreach (var item in AssetSerializeInfo.Inst.guidToRef)
                     {
-                        if (item.Value > 0)
+                        if (item.Value.Count > 0)
                             continue;
 
                         if (AssetSerializeInfo.Inst.guidToAsset.TryGetValue(item.Key, out AssetTreeElement ele))
@@ -251,7 +259,7 @@ namespace KA
         private void OnBottomGUICallback(ref Rect rect)
         {
             if (MainWindow.Inst.TreeView != null && MainWindow.Inst.TreeView.HasSelection())
-                rect.height -= 200;
+                rect.height -= HP.SelectionInfoHeight;
         }
 
         private void OnTopGUICallback(ref Rect rect)
@@ -276,9 +284,16 @@ namespace KA
                 _toolbarSelected = selected;
                 var assetList = GetAssetList();
                 RefreshTreeView(assetList);
+                MainWindow.Inst.TreeView.SetSelection(new List<int> { });
+                if (_treeView != null)
+                {
+                    _treeView.treeModel.Clear();
+                }
+
+
             }
 
-            topRect.x = rect.width - 5;
+            topRect.x = rect.width + 15;
             topRect.width = 100;
             if (GUI.Button(topRect, "Export"))
             {
@@ -291,35 +306,117 @@ namespace KA
 
             rect.y += 25;
             rect.height -= 25;
+
+            if(_treeView != null && _treeView.treeModel.numberOfDataElements > 0)
+            {
+                rect.width /= 2;
+            }
         }
 
-        private void OnSelectionGUICallback(ref Rect rect, List<TreeElement> elements)
+        private void OnSelectionGUICallback(ref Rect rect, List<TreeElement> elements, bool lastChange)
         {
+            var selectRect = new Rect(HP.WorkflowBoxWidth, rect.height + 60, rect.width / 2 + 100, 20);
+            if (elements == null)
+                return;
+
             if (elements.Count == 1)
             {
                 var obj = elements[0] as AssetTreeElement;
                 if (obj.Icon != null)
                 {
-                    GUI.DrawTexture(new Rect(HP.WorkflowBoxWidth, rect.height + 50, 80, 80), obj.Icon);
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth + 80, rect.height + 60, rect.width / 2, 20), "Info:");
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth + 80, rect.height + 75, rect.width / 2, 20), obj.Path);
+                    selectRect.x += 140;
+                    GUI.DrawTexture(new Rect(HP.WorkflowBoxWidth, rect.height + 50, 130, 130), obj.Icon);
+                }
+                GUISelectionLabel(ref selectRect, obj.name, EditorStyles.boldLabel);
+                GUISelectionLabel(ref selectRect, string.Format("Location:  {0}", obj.Path));
+
+                AssetSerializeInfo.Inst.guidToAsset.TryGetValue(obj.Guid, out AssetTreeElement ele);
+                GUISelectionLabel(ref selectRect, string.Format("Size:  {0}", (ele == null ? "0" : Helper.Path.GetSize(ele.Size))));
+
+                if(!string.IsNullOrEmpty(obj.Path))
+                {
+                    FileInfo info = new FileInfo(obj.Path);
+                    GUISelectionLabel(ref selectRect, string.Format("Creat Time:  {0}", info.CreationTime));
+                    GUISelectionLabel(ref selectRect, string.Format("Last WriteTime:  {0}", info.LastWriteTime));
+                    GUISelectionLabel(ref selectRect, string.Format("Last AccessTime:  {0}", info.LastAccessTime));
+                    GUISelectionLabel(ref selectRect, string.Format("IsReadOnly:  {0}", info.IsReadOnly));
+                }
+               
+                AssetSerializeInfo.Inst.guidToRef.TryGetValue(obj.Guid, out List<string> refPaths);
+                if (refPaths != null && refPaths.Count > 0)
+                {
+                    DrawTreeView(rect, refPaths, lastChange);
                 }
                 else
                 {
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth, rect.height + 60, rect.width / 2, 20), "Info:");
-                    GUI.Label(new Rect(HP.WorkflowBoxWidth, rect.height + 75, rect.width / 2, 20), obj.Path);
+                    if (_treeView != null)
+                        _treeView.treeModel.Clear();
                 }
             }
             else
             {
-                string msg = string.Format("Select {{{0}}} Items", elements.Count);
-                GUI.Label(new Rect(HP.WorkflowBoxWidth, rect.height + 60, rect.width / 2, 20), msg);
+                string msg = string.Format("{0} Files.", elements.Count);
+                GUISelectionLabel(ref selectRect, msg, EditorStyles.boldLabel);
+
+                long totalSize = 0;
+                for (int i = 0; i < elements.Count; i++)
+                {
+                    var e = elements[i] as AssetTreeElement;
+                    AssetSerializeInfo.Inst.guidToAsset.TryGetValue(e.Guid, out AssetTreeElement ele);
+                    totalSize += ele == null ? 0 : ele.Size;
+                }
+
+                GUISelectionLabel(ref selectRect, string.Format("Total Size:   {0}", Helper.Path.GetSize(totalSize)));
+
+                if (_treeView != null)
+                    _treeView.treeModel.Clear();
             }
         }
 
+        private void GUISelectionLabel(ref Rect rect, string info, GUIStyle style = null)
+        {
+            if(style != null)
+                GUI.Label(rect, info, style);
+            else
+                GUI.Label(rect, info);
+            rect.y += 15;
+        }
+
+        private void DrawTreeView(Rect rect, List<string> refPath, bool lastChange)
+        {
+            if(lastChange)
+            {
+                _selectionList.Clear();
+                if (_treeviewState == null)
+                {
+                    _treeviewState = new TreeViewState();
+                    AssetTreeHelper.ListToTree(refPath, _selectionList);
+                    var treeModel = new TreeModel<AssetTreeElement>(_selectionList);
+
+                    if (_treeView == null)
+                        _treeView = new DependTreeView(_treeviewState, treeModel);
+
+                    _treeView.Reload();
+                }
+                else
+                {
+                    AssetTreeHelper.ListToTree(refPath, _selectionList);
+                    _treeView.treeModel.SetData(_selectionList);
+                    _treeView.Reload();
+                }
+            }
+
+            rect.x = rect.width + 130;
+            _treeView.OnGUI(rect);
+        }
+        private Vector2 scrollPane;
         private int _toolbarSelected = 0;
         private List<string> usedListCache = null;
         private List<string> uselessListCache = null;
+
+        private List<AssetTreeElement> _selectionList = new List<AssetTreeElement>();
+        private DependTreeView _treeView;
+        private TreeViewState _treeviewState;
     }
 }
 

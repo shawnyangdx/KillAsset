@@ -1,0 +1,13 @@
+Icon	Name	Path	Size	Ref	
+KA.AssetTreeElement	Root		0	0	
+UnityEditor.SceneAsset	TestScene.unity	Assets/Test/Scenes/TestScene.unity	9	0	
+UnityEditor.SceneAsset	UIScene.unity	Assets/Test/Scenes/UIScene.unity	13	0	
+UnityEngine.Texture2D	xiansuo_lianxian_hong.png	Assets/Test/Texture/xiansuo_lianxian_hong.png	1	0	
+UnityEngine.Texture2D	xiansuo_panding_xian.png	Assets/Test/Texture/xiansuo_panding_xian.png	1	0	
+UnityEngine.Texture2D	xiansuo_xuanzhong.png	Assets/Test/Texture/xiansuo_xuanzhong.png	25	0	
+UnityEngine.Texture2D	xiansuo_yishiyong.png	Assets/Test/Texture/xiansuo_yishiyong.png	0	0	
+UnityEngine.Texture2D	xiaosuo_biaotijianbian.png	Assets/Test/Texture/xiaosuo_biaotijianbian.png	1	0	
+UnityEngine.Texture2D	xiaosuo_bupipei.png	Assets/Test/Texture/xiaosuo_bupipei.png	24	0	
+UnityEngine.Texture2D	xiaosuo_di.png	Assets/Test/Texture/xiaosuo_di.png	1	0	
+UnityEngine.Texture2D	xiaosuo_panding_di.png	Assets/Test/Texture/xiaosuo_panding_di.png	0	0	
+UnityEngine.Texture2D	xiaosuo_weixuanzhong.png	Assets/Test/Texture/xiaosuo_weixuanzhong.png	18	0	

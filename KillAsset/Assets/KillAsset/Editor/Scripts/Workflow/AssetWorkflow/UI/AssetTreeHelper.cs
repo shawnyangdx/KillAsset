@@ -42,7 +42,7 @@ namespace KA
             return newDepends.Count > 0;
         }
 
-        public static void CollectAssetDependencies(List<string> dependencies, int depth, List<string> checkList = null)
+        public static void CollectAssetDependencies(string parentPath, List<string> dependencies, int depth, List<string> checkList = null)
         {
             for (int i = 0; i < dependencies.Count; i++)
             {
@@ -50,13 +50,13 @@ namespace KA
                 if (TryGetDependencies(dependencies[i], checkList, out List<string> depends))
                 {
                     AssetTreeElement element = CreateAssetElement(dependencies[i], depth);
-                    AssetSerializeInfo.Inst.AddItem(element, incRef: true);
-                    CollectAssetDependencies(depends, element.depth + 1, checkList);
+                    AssetSerializeInfo.Inst.AddDependenceItem(element, incRefPath: parentPath);
+                    CollectAssetDependencies(dependencies[i], depends, element.depth + 1, checkList);
                 }
             }
         }
 
-        public static AssetTreeElement CreateAssetElement(string path, int depth)
+        public static AssetTreeElement CreateAssetElement(string path, int depth, bool calcSize = false)
         {
             AssetTreeElement element = new AssetTreeElement
             {
@@ -71,7 +71,17 @@ namespace KA
             return element;
         }
 
-        public static void ListToTree(List<string> list, List<AssetTreeElement> elements)
+        public static void CollectFileSize(AssetTreeElement element)
+        {
+            FileInfo info = new FileInfo(element.Path);
+            if (info != null)
+                element.Size = info.Length;
+        }
+
+        public static void ListToTree(
+            List<string> list, 
+            List<AssetTreeElement> elements, 
+            Action<AssetTreeElement> onAction = null)
         {
             AssetSerializeInfo.Inst.BuildID = 0;
             var root = AssetTreeElement.CreateRoot();
@@ -80,6 +90,7 @@ namespace KA
             {
                 var element = CreateAssetElement(list[i], 0);
                 elements.Add(element);
+                onAction?.Invoke(element);
             }
         }
 

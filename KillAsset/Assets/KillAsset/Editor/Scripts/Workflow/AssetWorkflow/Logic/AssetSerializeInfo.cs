@@ -37,7 +37,7 @@ namespace KA
 
         internal Dictionary<string, AssetTreeElement> guidToAsset = new Dictionary<string, AssetTreeElement>();
 
-        internal Dictionary<string, int> guidToRef = new Dictionary<string, int>();
+        internal Dictionary<string, List<string>> guidToRef = new Dictionary<string, List<string>>();
         //use for calculate reference.
         internal HashSet<string> guidRefSet = new HashSet<string>();
 
@@ -78,12 +78,13 @@ namespace KA
                     sb.Append("\t");
                     sb.Append(list[i].Path);
                     sb.Append("\t");
-                    sb.Append(list[i].Size);
+                    guidToAsset.TryGetValue(list[i].Guid, out AssetTreeElement ele);
+                    sb.Append(ele != null ? ele.Size : 0);
                     sb.Append("\t");
 
-                    if(guidToRef.TryGetValue(list[i].Guid, out int val) && val > 0)
+                if (guidToRef.TryGetValue(list[i].Guid, out List<string> valList) && valList.Count > 0)
                     {
-                        sb.Append(val);
+                        sb.Append(valList.Count);
                         sb.Append("\t");
                     }
                     else
@@ -119,7 +120,7 @@ namespace KA
             File.WriteAllText(path, content, targetEncoding);
         }
 
-        public void AddItem(AssetTreeElement element, bool isRoot = false, bool incRef = false)
+        public void AddDependenceItem(AssetTreeElement element, bool isRoot = false, string incRefPath = "")
         {
             treeList.Add(element);
             if (isRoot)
@@ -128,31 +129,24 @@ namespace KA
             if (!guidToAsset.TryGetValue(element.Guid, out AssetTreeElement value))
             {
                 guidToAsset.Add(element.Guid, element);
-                CollectFileSize(element);
-                guidToRef[element.Guid] = 0;
+                AssetTreeHelper.CollectFileSize(element);
+                guidToRef[element.Guid] = new List<string>();
             }
 
-            if (incRef && guidRefSet.Add(element.Guid))
+            if (!string.IsNullOrEmpty(incRefPath) && guidRefSet.Add(element.Guid))
             {
-                if (!guidToRef.TryGetValue(element.Guid, out int val))
+                if (!guidToRef.TryGetValue(element.Guid, out List<string> valList))
                 {
-                    guidToRef.Add(element.Guid, 1);
+                    valList = new List<string>();
+                    valList.Add(incRefPath);
+                    guidToRef.Add(element.Guid, valList);
                 }
                 else
                 {
-                    guidToRef[element.Guid]++;
+                    valList.Add(incRefPath);
                 }
             }
-
         }
-
-        void CollectFileSize(AssetTreeElement element)
-        {
-            FileInfo info = new FileInfo(element.Path);
-            if (info != null)
-                element.Size = info.Length;
-        }
-
 
 
         int _id = 1;

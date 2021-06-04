@@ -62,6 +62,11 @@ namespace KA
 			m_MaxID = m_Data.Max(e => e.id);
 		}
 
+        public void Clear()
+        {
+            m_Data.Clear();
+        }
+
 		public int GenerateUniqueID ()
 		{
 			return ++m_MaxID;

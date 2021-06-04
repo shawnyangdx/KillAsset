@@ -51,6 +51,8 @@ namespace KA
                 AssetTreeElement element = SelectionObjects[0];
                 Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(element.Path);
             }
+
+            LastSelectChanged = true;
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -64,7 +66,7 @@ namespace KA
         #endregion
 
         #region public method
-
+        internal bool LastSelectChanged { get; set; }
         #endregion
 
         void CellGUI(Rect cellRect, TreeViewItem<AssetTreeElement> item, ColumnType column, ref RowGUIArgs args)
@@ -109,8 +111,8 @@ namespace KA
                 case ColumnType.Ref:
                     {
                         args.rowRect = cellRect;
-                        AssetSerializeInfo.Inst.guidToRef.TryGetValue(item.data.Guid, out int refCount);
-                        args.label = refCount == 0 ? "" : refCount.ToString();
+                        AssetSerializeInfo.Inst.guidToRef.TryGetValue(item.data.Guid, out List<string> refList);
+                        args.label = (refList == null || refList.Count == 0) ? "" : refList.Count.ToString();
                         base.RowGUI(args);
                     }
                     break;

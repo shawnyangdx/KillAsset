@@ -19,7 +19,7 @@ namespace KA
         public static AssetTreeElement CreateRoot()
         {
             AssetTreeElement element = new AssetTreeElement();
-            element.id = 0;
+            element.id = -1;
             element.depth = -1;
             element.name = "Root";
             element.AssetType = element.GetType();
