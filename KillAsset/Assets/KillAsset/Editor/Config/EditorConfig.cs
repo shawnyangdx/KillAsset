@@ -37,9 +37,9 @@ public class EditorConfig : ScriptableObject
     }
 
     public string RootPath = "";
-    public string dataFileExtension = ".kainfo";
+    public string dataFileExtension = "kainfo";
 
-    public List<string> ignoreExtension;
+    public List<string> ignoreExtension = new List<string> { ".cs", ".meta" };
     public List<string> ignoreDirectory;
 
     public ExportType exportType;
