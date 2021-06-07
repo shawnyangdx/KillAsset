@@ -37,8 +37,13 @@ namespace KA
         public override void OnInspectorGUI()
         {
             script = (EditorConfig)target;
+
+            if(string.IsNullOrEmpty(RootPathProperty.stringValue))
+                RootPathProperty.stringValue = Application.dataPath;
+
             if (GUILayout.Button("Root Path", GUILayout.Width(80f)))
             {
+                string targetPath = Path.Combine(Application.dataPath, RootPathProperty.stringValue);
                 var path = EditorUtility.OpenFolderPanel("Select Path", RootPathProperty.stringValue, "");
                 if(!string.IsNullOrEmpty(path))
                 {
@@ -46,7 +51,11 @@ namespace KA
                 }
             }
 
-            EditorGUILayout.LabelField(FileUtil.GetProjectRelativePath(script.RootPath).NormalizePath());
+            string relativePath = FileUtil.GetProjectRelativePath(RootPathProperty.stringValue);
+            if(string.IsNullOrEmpty(relativePath))
+                EditorGUILayout.LabelField("Missing");
+            else
+                EditorGUILayout.LabelField(relativePath.NormalizePath());
             GuiLine();
 
             EditorGUILayout.LabelField("Ignore Settings:", EditorStyles.boldLabel);
