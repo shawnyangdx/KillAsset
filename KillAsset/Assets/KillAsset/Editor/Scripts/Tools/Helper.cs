@@ -9,10 +9,12 @@ namespace KA
 {
     public static class Helper
     {
+        public static string Version = "1.0";
+
         public static class WindowParam
         {
             public static float WorkflowBoxWidth = 120;
-            public static float RightExpendOffset = 110;
+            public static float ToolBarWidth = 110;
             public static float RightBoardOffset = 130;
             public static float BottomBoardOffset = 10;
 
