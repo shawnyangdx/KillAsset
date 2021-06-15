@@ -69,11 +69,38 @@ namespace KA
             }
         }
 
+        public GUIContent TreeEditorRefresh
+        {
+            get
+            {
+                if (m_TreeEditorRfresh == null)
+                    m_TreeEditorRfresh = EditorGUIUtility.IconContent("TreeEditor.Refresh");
+
+                return m_TreeEditorRfresh;
+            }
+        }
+
+        public GUIContent SettingContent
+        {
+            get
+            {
+                if (m_SettingContent == null)
+                {
+                    m_SettingContent = new GUIContent(EditorGUIUtility.IconContent("d__Popup"));
+                    m_SettingContent.tooltip = "Show Config In Inspector.";
+                }
+
+                return m_SettingContent;
+            }
+        }
 
         private Font m_titleFont;
         private Font m_introFont;
         private GUIStyle m_buildInlabelStyle;
         private GUIStyle m_buildInBoxStyle;
+
+        private GUIContent m_TreeEditorRfresh;
+        private GUIContent m_SettingContent;
     }
 }
 

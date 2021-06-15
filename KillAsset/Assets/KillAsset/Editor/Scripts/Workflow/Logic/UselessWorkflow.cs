@@ -9,7 +9,7 @@ using HP = KA.Helper.WindowParam;
 
 namespace KA
 {
-    [WorkflowOverride("Useless Clean")]
+    [WorkflowOverride("Asset Cleaner")]
     public class UselessWorkflow : AssetWorkflow
     {
         internal override GUIOptions GuiOptions => new GUIOptions()
@@ -22,7 +22,6 @@ namespace KA
         public override void Run()
         {
             AssetSerializeInfo.Init();
-
             List<string> checkList = null;
             if(FileUtil.GetProjectRelativePath(EditorConfig.Inst.RootPath) != "Assets")
             {
@@ -43,6 +42,9 @@ namespace KA
             });
 
             EditorUtility.ClearProgressBar();
+
+            var assetList = GetAssetList();
+            RefreshTreeView(assetList);
         }
 
         public override void Clear()
@@ -258,10 +260,10 @@ namespace KA
         private void OnTopGUICallback(ref Rect rect)
         {
             var topRect = rect;
-            topRect.x = HP.WorkflowBoxWidth + 5;
+            topRect.x += 5;
             topRect.y = 5;
             topRect.width = topRect.height = 20;
-            if (GUI.Button(topRect, EditorGUIUtility.IconContent("TreeEditor.Refresh")))
+            if (GUI.Button(topRect, GUIStyleMgr.Instance.TreeEditorRefresh))
             {
                 Clear();
                 Run();
@@ -308,7 +310,7 @@ namespace KA
 
         private void OnSelectionGUICallback(ref Rect rect, List<TreeElement> elements, bool lastChange)
         {
-            var selectRect = new Rect(HP.WorkflowBoxWidth, rect.height + 60, rect.width / 2 + 100, 20);
+            var selectRect = new Rect(rect.x, rect.height + 60, rect.width / 2 + 100, 20);
             if (elements == null)
                 return;
 
@@ -318,7 +320,7 @@ namespace KA
                 if (obj.Icon != null)
                 {
                     selectRect.x += 140;
-                    GUI.DrawTexture(new Rect(HP.WorkflowBoxWidth, rect.height + 50, 130, 130), obj.Icon);
+                    GUI.DrawTexture(new Rect(rect.x, rect.height + 50, 130, 130), obj.Icon);
                 }
                 GUISelectionLabel(ref selectRect, obj.name, EditorStyles.boldLabel);
                 GUISelectionLabel(ref selectRect, string.Format("Location:  {0}", obj.Path));

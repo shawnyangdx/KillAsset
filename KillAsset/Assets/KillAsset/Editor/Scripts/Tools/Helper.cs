@@ -11,6 +11,11 @@ namespace KA
     {
         public static string Version = "1.0";
 
+        public class Color
+        {
+            public static UnityEngine.Color titleColor = new UnityEngine.Color(112f / 250, 112f / 250, 112f / 250);
+        }
+
         public static class WindowParam
         {
             public static float WorkflowBoxWidth = 120;
