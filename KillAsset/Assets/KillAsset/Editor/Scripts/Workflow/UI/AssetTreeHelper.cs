@@ -39,7 +39,7 @@ namespace KA
                 }
             }
 
-            return newDepends.Count > 0;
+            return newDepends.Count > 0 || FindCheckList(checkList, path);
         }
 
         public static void CollectAssetDependencies(string parentPath, List<string> dependencies, int depth, List<string> checkList = null)

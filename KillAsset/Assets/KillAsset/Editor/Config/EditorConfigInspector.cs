@@ -26,7 +26,7 @@ namespace KA
         {
             script = (EditorConfig)target;
 
-            RootPathProperty = serializedObject.FindProperty("RootPath");
+            RootPathProperty = serializedObject.FindProperty("m_rootPath");
             OutputPathProperty = serializedObject.FindProperty("OutputPath");
             outputExtProperty = serializedObject.FindProperty("dataFileExtension");
             exportProperty = serializedObject.FindProperty("exportType");
@@ -38,24 +38,26 @@ namespace KA
         {
             script = (EditorConfig)target;
 
-            if(string.IsNullOrEmpty(RootPathProperty.stringValue))
-                RootPathProperty.stringValue = Application.dataPath;
+            if (string.IsNullOrEmpty(RootPathProperty.stringValue))
+                RootPathProperty.stringValue = "";
 
             if (GUILayout.Button("Root Path", GUILayout.Width(80f)))
             {
                 string targetPath = Path.Combine(Application.dataPath, RootPathProperty.stringValue);
-                var path = EditorUtility.OpenFolderPanel("Select Path", RootPathProperty.stringValue, "");
-                if(!string.IsNullOrEmpty(path))
+                var path = EditorUtility.OpenFolderPanel("Select Path", targetPath, "");
+                if (!string.IsNullOrEmpty(path))
                 {
-                    RootPathProperty.stringValue = path;
+                    string newPath = FileUtil.GetProjectRelativePath(path).Replace("Assets", "");
+                    int index = newPath.IndexOf("/");
+                    if (index >= 0)
+                        newPath = newPath.Remove(0, index + 1);
+
+                    RootPathProperty.stringValue = newPath;
                 }
             }
 
-            string relativePath = FileUtil.GetProjectRelativePath(RootPathProperty.stringValue);
-            if(string.IsNullOrEmpty(relativePath))
-                EditorGUILayout.LabelField("Missing");
-            else
-                EditorGUILayout.LabelField(relativePath.NormalizePath());
+            string showPath = Path.Combine("Assets", RootPathProperty.stringValue).NormalizePath();
+            EditorGUILayout.LabelField(showPath);
             GuiLine();
 
             EditorGUILayout.LabelField("Ignore Settings:", EditorStyles.boldLabel);

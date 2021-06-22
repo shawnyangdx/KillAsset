@@ -138,13 +138,11 @@ namespace KA
                 if (!guidToRef.TryGetValue(element.Guid, out List<string> valList))
                 {
                     valList = new List<string>();
-                    valList.Add(incRefPath);
                     guidToRef.Add(element.Guid, valList);
                 }
-                else
-                {
+
+                if(!valList.Contains(incRefPath))
                     valList.Add(incRefPath);
-                }
             }
         }
 
