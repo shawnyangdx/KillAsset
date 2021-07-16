@@ -31,6 +31,12 @@ namespace KA
             _inst.AllAssetPaths = Helper.Path.CollectAssetPaths(Application.dataPath);
         }
 
+
+        /// <summary>
+        /// create tree element need assign a unique id.
+        /// when change work flow this buildId will Reset.
+        /// if your workflow need refresh treelist.you must reset this id before you refresh logic.
+        /// </summary>
         internal int BuildID { get { return _id++; }set { _id = value; } }
 
         internal List<string> AllAssetPaths = new List<string>();
@@ -38,8 +44,6 @@ namespace KA
         internal Dictionary<string, AssetTreeElement> guidToAsset = new Dictionary<string, AssetTreeElement>();
 
         internal Dictionary<string, List<string>> guidToRef = new Dictionary<string, List<string>>();
-        //use for calculate reference.
-        internal HashSet<string> guidRefSet = new HashSet<string>();
 
         public List<AssetTreeElement> treeList = new List<AssetTreeElement>();
 
@@ -120,7 +124,26 @@ namespace KA
             File.WriteAllText(path, content, targetEncoding);
         }
 
-        public void AddDependenceItem(AssetTreeElement element, bool isRoot = false, string incRefPath = "")
+        /// <summary>
+        /// collect Dependences
+        /// </summary>
+        /// <param name="checkList">all asset in config root path</param>
+        internal void CollectDependences(List<string> checkList)
+        {
+            for (int i = 0; i < AllAssetPaths.Count; i++)
+            {
+                string path = AllAssetPaths[i];
+                guidRefSet.Clear();
+                if (AssetTreeHelper.TryGetDependencies(path, checkList, out List<string> depends))
+                {
+                    AssetTreeElement element = AssetTreeHelper.CreateAssetElement(path, 0);
+                    AddDependenceItem(element);
+                    AssetTreeHelper.CollectAssetDependencies(path, depends, element.depth + 1, checkList);
+                }
+            }
+        }
+
+        internal void AddDependenceItem(AssetTreeElement element, bool isRoot = false, string incRefPath = "")
         {
             treeList.Add(element);
             if (isRoot)
@@ -148,6 +171,9 @@ namespace KA
 
 
         int _id = 1;
+
+        //use for calculate reference.
+        HashSet<string> guidRefSet = new HashSet<string>();
     }
 }
 

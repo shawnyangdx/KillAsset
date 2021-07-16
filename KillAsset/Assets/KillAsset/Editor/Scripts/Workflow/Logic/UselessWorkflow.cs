@@ -9,7 +9,7 @@ using HP = KA.Helper.WindowParam;
 
 namespace KA
 {
-    [WorkflowOverride("Asset Cleaner")]
+    [WorkflowOverride("Asset Cleaner" , 10000)]
     public class UselessWorkflow : AssetWorkflow
     {
         internal override GUIOptions GuiOptions => new GUIOptions()
@@ -21,28 +21,20 @@ namespace KA
 
         public override void Run()
         {
-            AssetSerializeInfo.Init();
+            //attach check list
             List<string> checkList = null;
-            if(FileUtil.GetProjectRelativePath(EditorConfig.Inst.RootPath) != "Assets")
-            {
+            string rootPath = FileUtil.GetProjectRelativePath(EditorConfig.Inst.RootPath);
+            if(string.CompareOrdinal(rootPath, "Assets") != 0)
                 checkList = Helper.Path.CollectAssetPaths(EditorConfig.Inst.RootPath);
-            }
 
+            //create root
             var root = AssetTreeElement.CreateRoot();
             AssetSerializeInfo.Inst.AddDependenceItem(root, true);
-            AssetSerializeInfo.Inst.AllAssetPaths.ForEach(v =>
-            {
-                AssetSerializeInfo.Inst.guidRefSet.Clear();
-                if (AssetTreeHelper.TryGetDependencies(v, checkList, out List<string> depends))
-                {
-                    AssetTreeElement element = AssetTreeHelper.CreateAssetElement(v, 0);
-                    AssetSerializeInfo.Inst.AddDependenceItem(element);
-                    AssetTreeHelper.CollectAssetDependencies(v, depends, element.depth + 1, checkList);
-                }
-            });
 
-            EditorUtility.ClearProgressBar();
+            //collect Dependences.
+            AssetSerializeInfo.Inst.CollectDependences(checkList);
 
+            //refresh tree view
             var assetList = GetAssetList();
             RefreshTreeView(assetList);
         }
@@ -77,7 +69,7 @@ namespace KA
 
         public override void Sort(int columnIndex, bool isAscend)
         {
-            List<AssetTreeElement> assetList = MainWindow.Inst.TreeView.treeModel.Data as List<AssetTreeElement>;
+            List<AssetTreeElement> assetList = TreeView.treeModel.Data as List<AssetTreeElement>;
             AssetTreeElement root = assetList[0];
 
             assetList = assetList.Where(v => v.depth == 0).ToList();
@@ -159,15 +151,6 @@ namespace KA
             RefreshTreeView(assetList);
         }
 
-        List<string> CollectRootPath()
-        {
-            return Directory.GetFiles(EditorConfig.Inst.RootPath, "*.*", SearchOption.AllDirectories)
-                .Where(v => !AssetTreeHelper.IgnoreExtension(v))
-                .Select(v => FileUtil.GetProjectRelativePath(v).NormalizePath())
-                .Where(v => !AssetTreeHelper.IgnoreDirectory(v))
-                .ToList();
-        }
-
         void RebuildList(AssetTreeElement element, List<AssetTreeElement> newList)
         {
             newList.Add(element);
@@ -179,12 +162,6 @@ namespace KA
                 AssetTreeElement assetElement = element.children[i] as AssetTreeElement;
                 RebuildList(assetElement, newList);
             }
-        }
-
-        private void RefreshTreeView(List<AssetTreeElement> assetList)
-        {
-            MainWindow.Inst.TreeView.treeModel.SetData(assetList);
-            MainWindow.Inst.TreeView.Reload();
         }
 
         private List<AssetTreeElement> GetAssetList(int targetSelected = -1)
@@ -253,7 +230,7 @@ namespace KA
 
         private void OnBottomGUICallback(ref Rect rect)
         {
-            if (MainWindow.Inst.TreeView != null && MainWindow.Inst.TreeView.HasSelection())
+            if (TreeView.HasSelection())
                 rect.height -= HP.SelectionInfoHeight;
         }
 
@@ -279,13 +256,9 @@ namespace KA
                 _toolbarSelected = selected;
                 var assetList = GetAssetList();
                 RefreshTreeView(assetList);
-                MainWindow.Inst.TreeView.SetSelection(new List<int> { });
+                TreeView.SetSelection(new List<int> { });
                 if (_treeView != null)
-                {
                     _treeView.treeModel.Clear();
-                }
-
-
             }
 
             topRect.x = rect.width + 15;

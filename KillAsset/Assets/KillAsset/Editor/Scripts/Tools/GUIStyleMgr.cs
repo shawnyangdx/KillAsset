@@ -80,13 +80,15 @@ namespace KA
             }
         }
 
+
         public GUIContent SettingContent
         {
             get
             {
                 if (m_SettingContent == null)
                 {
-                    m_SettingContent = new GUIContent(EditorGUIUtility.IconContent("d__Popup"));
+                    var tex = Resources.Load<Texture>("Texture/SettingIcon");
+                    m_SettingContent = new GUIContent(tex);
                     m_SettingContent.tooltip = "Show Config In Inspector.";
                 }
 

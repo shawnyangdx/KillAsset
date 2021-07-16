@@ -14,8 +14,6 @@ namespace KA
         #region static method
         private static MainWindow mainWindow;
 
-        public static MainWindow Inst { get { return mainWindow; } }
-
         [UnityEditor.MenuItem("Window/Kill Asset _%&k")]
         public static void OpenAssetHunter()
         {
@@ -129,14 +127,14 @@ namespace KA
                 {
                     if (toggleState)
                     {
-                        InitIfNeeded();
+                        Prepare();
                         p.Run();
+
                         if (_lastWorkflow != null && _lastWorkflow != p)
                         {
                             _lastWorkflow.Clear();
                             _lastWorkflow.ToggleState = false;
                         }
-
                         _lastWorkflow = p;
                     }
                     else
@@ -177,7 +175,7 @@ namespace KA
             if(_treeView.LastSelectChanged)
                 _selectObjects = new List<TreeElement>(_treeView.SelectionObjects);
 
-            _lastWorkflow.GuiOptions.onSelectionGUICallback(ref baseRect, _selectObjects, _treeView.LastSelectChanged);
+            _lastWorkflow.GuiOptions.onSelectionGUICallback?.Invoke(ref baseRect, _selectObjects, _treeView.LastSelectChanged);
             _treeView.LastSelectChanged = false;
         }
 
@@ -195,35 +193,45 @@ namespace KA
             return new Rect(8, 8 + 22 * index, 102, 20);
         }
 
-        private void InitIfNeeded()
+        private void Prepare()
         {
-            if (!m_Initialized)
-            {
-                if (_treeviewState == null)
-                    _treeviewState = new TreeViewState();
+            //clear serializeinfo
+            if (m_Initialized)
+                AssetSerializeInfo.Inst.Clear();
 
-                bool firstInit = m_MultiColumnHeaderState == null;
-                var headerState = AssetTreeHelper.CreateDefaultMultiColumnHeaderState();
-                if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
-                    MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
-                m_MultiColumnHeaderState = headerState;
+            //init some info
+            if (m_Initialized)
+                return;
 
-                var multiColumnHeader = new CustomMultiColumnHeader(headerState);
-                if (firstInit)
-                    multiColumnHeader.ResizeToFit();
+            AssetSerializeInfo.Init();
 
-                multiColumnHeader.sortingChanged += OnSortingChanged;
+            if (_treeviewState == null)
+                _treeviewState = new TreeViewState();
 
-                var root = AssetTreeElement.CreateRoot();
-                var treeModel = new TreeModel<AssetTreeElement>(new List<AssetTreeElement>() { root });
-                _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
-                _treeView.Reload();
-                _treeView.treeModel.modelChanged += () => Repaint();
-                _searchField = new SearchField();
-                _searchField.downOrUpArrowKeyPressed += _treeView.SetFocusAndEnsureSelectedItem;
+            bool firstInit = m_MultiColumnHeaderState == null;
+            var headerState = AssetTreeHelper.CreateDefaultMultiColumnHeaderState();
+            if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
+                MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
+            m_MultiColumnHeaderState = headerState;
 
-                m_Initialized = true;
-            }
+            var multiColumnHeader = new CustomMultiColumnHeader(headerState);
+            if (firstInit)
+                multiColumnHeader.ResizeToFit();
+
+            multiColumnHeader.sortingChanged += OnSortingChanged;
+
+            var root = AssetTreeElement.CreateRoot();
+            var treeModel = new TreeModel<AssetTreeElement>(new List<AssetTreeElement>() { root });
+            _treeView = new AssetTreeView(_treeviewState, multiColumnHeader, treeModel);
+            _treeView.Reload();
+            _treeView.treeModel.modelChanged += () => Repaint();
+            _searchField = new SearchField();
+            _searchField.downOrUpArrowKeyPressed += _treeView.SetFocusAndEnsureSelectedItem;
+
+            for (int i = 0; i < _workflowes.Count; i++)
+                _workflowes[i].TreeView = _treeView;
+
+            m_Initialized = true;
         }
 
         private void CollectWorkflows()
@@ -245,19 +253,19 @@ namespace KA
                 }
 
                 var overrideAttr = t.GetCustomAttribute<WorkflowOverrideAttribute>(false);
+                var inst = (AssetWorkflow)Activator.CreateInstance(t);
+                _workflowes.Add(inst);
+
                 if (overrideAttr != null)
                 {
-                    var inst = (AssetWorkflow)Activator.CreateInstance(t);
                     inst.Alias = overrideAttr.Name;
-                    _workflowes.Add(inst);
+                    inst.SortIndex = overrideAttr.SortIndex;
                 }
                 else
-                {
-                    var inst = (AssetWorkflow)Activator.CreateInstance(t);
                     inst.Alias = t.Name.Replace("Workflow", "");
-                    _workflowes.Add(inst);
-                }
             }
+
+            _workflowes.Sort((a, b) => b.SortIndex - a.SortIndex);
         }
 
         private void OnCollectDependenies(string path, int depth)
@@ -289,7 +297,5 @@ namespace KA
         AssetWorkflow _lastWorkflow;
         private List<TreeElement> _selectObjects;
     }
-
-
 }
 

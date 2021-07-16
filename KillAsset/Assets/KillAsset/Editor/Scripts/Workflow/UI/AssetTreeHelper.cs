@@ -12,6 +12,16 @@ namespace KA
     {
         public static Action<string, int> onCollectDependencies;
 
+        public static int BuildID { get; internal set; } = 0;
+
+        /// <summary>
+        /// try get dependencies via path.
+        /// </summary>
+        /// <param name="path">asset path</param>
+        /// <param name="checkList">check asset is in check asset list. 
+        /// this param maybe null, 'null' means all asset is check list</param>
+        /// <param name="newDepends">find all matching dependencies.</param>
+        /// <returns>return true if have depends or no depand but in check list.</returns>
         public static bool TryGetDependencies(
             string path, 
             List<string> checkList, 
@@ -46,7 +56,6 @@ namespace KA
         {
             for (int i = 0; i < dependencies.Count; i++)
             {
-                onCollectDependencies?.Invoke(dependencies[i], 0);
                 if (TryGetDependencies(dependencies[i], checkList, out List<string> depends))
                 {
                     AssetTreeElement element = CreateAssetElement(dependencies[i], depth);
@@ -56,7 +65,7 @@ namespace KA
             }
         }
 
-        public static AssetTreeElement CreateAssetElement(string path, int depth, bool calcSize = false)
+        public static AssetTreeElement CreateAssetElement(string path, int depth)
         {
             AssetTreeElement element = new AssetTreeElement
             {
@@ -71,6 +80,10 @@ namespace KA
             return element;
         }
 
+        /// <summary>
+        /// get file size
+        /// </summary>
+        /// <param name="element"></param>
         public static void CollectFileSize(AssetTreeElement element)
         {
             FileInfo info = new FileInfo(element.Path);
@@ -78,11 +91,20 @@ namespace KA
                 element.Size = info.Length;
         }
 
+        /// <summary>
+        /// you can use this function convert path list to assetTree element list.
+        /// </summary>
+        /// <param name="list">path list</param>
+        /// <param name="elements">target assetTreeElement list</param>
+        /// <param name="onAction">callback invoke</param>
         public static void ListToTree(
             List<string> list, 
             List<AssetTreeElement> elements, 
             Action<AssetTreeElement> onAction = null)
         {
+            if (elements == null)
+                elements = new List<AssetTreeElement>();
+
             AssetSerializeInfo.Inst.BuildID = 0;
             var root = AssetTreeElement.CreateRoot();
             elements.Add(root);
@@ -94,6 +116,9 @@ namespace KA
             }
         }
 
+        /// <summary>
+        /// ignore ext via path
+        /// </summary>
         public static bool IgnoreExtension(string path)
         {
             List<string> list = EditorConfig.Inst.ignoreExtension;
@@ -112,6 +137,9 @@ namespace KA
             return false;
         }
 
+        /// <summary>
+        /// ignore directory
+        /// </summary>
         public static bool IgnoreDirectory(string path)
         {
             List<string> list = EditorConfig.Inst.ignoreDirectory;
@@ -130,6 +158,10 @@ namespace KA
             return false;
         }
 
+        /// <summary>
+        /// create a default multipul column header state.only use for gui.
+        /// if you want to extend column, you can add a new column class and insert it in this class.
+        /// </summary>
         public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState()
         {
             var columns = new[]
