@@ -20,11 +20,14 @@ namespace KA
             List<string> pathList = new List<string>();
             for (int i = 0; i < checkList.Count; i++)
             {
-                if (!Regex.IsMatch(checkList[i], ChineseRegex))
-                    continue;
-
-
-                pathList.Add(checkList[i]);
+                if (Regex.IsMatch(checkList[i], ChineseRegex))  //chinese regex
+                {
+                    pathList.Add(checkList[i]);
+                }
+                else if (checkList[i].IndexOf(" ") >= 0)  //chinese regex
+                {
+                    pathList.Add(checkList[i]);
+                }
             }
 
             RefreshTreeView(pathList);

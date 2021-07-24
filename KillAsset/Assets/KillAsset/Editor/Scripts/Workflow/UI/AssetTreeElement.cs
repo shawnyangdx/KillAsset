@@ -15,7 +15,7 @@ namespace KA
         [SerializeField] protected string m_path;
         protected string m_assetGuid;
         protected long m_size;
-
+        string m_relativePath; //without 'asset/'
         public static AssetTreeElement CreateRoot()
         {
             AssetTreeElement element = new AssetTreeElement();
@@ -41,6 +41,19 @@ namespace KA
         {
             get { return m_path; }
             set { m_path = value; }
+        }
+
+        public string RelativePath
+        {
+            get
+            {
+                if(string.IsNullOrEmpty(m_relativePath))
+                {
+                    m_relativePath = m_path.Replace("Assets/", "");
+                }
+
+                return m_relativePath;
+            }
         }
 
         public string Guid

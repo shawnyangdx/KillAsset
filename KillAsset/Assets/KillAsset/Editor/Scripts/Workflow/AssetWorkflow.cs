@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
@@ -57,11 +58,92 @@ namespace KA
         public virtual bool CanSearch(TreeElement t) { return false; }
 
         /// <summary>
-        /// sort function.when you click ui sort btn,this function will be run.
+        /// sort base function.  when you click ui sort btn,this function will be run.
         /// </summary>
         /// <param name="columnIndex"></param>
         /// <param name="isAscend">is ascend or descend</param>
-        public virtual void Sort(int columnIndex, bool isAscend) { }
+        public virtual void Sort(int columnIndex, bool isAscend) 
+        {
+            List<AssetTreeElement> assetList = TreeView.treeModel.Data as List<AssetTreeElement>;
+            AssetTreeElement root = assetList[0];
+
+            assetList = assetList.Where(v => v.depth == 0).ToList();
+            switch (columnIndex)
+            {
+                case (int)ColumnType.Icon:
+                    {
+                        assetList = isAscend ? assetList.OrderBy(v => v.AssetType.ToString()).ToList() :
+                                               assetList.OrderByDescending(v => v.AssetType.ToString()).ToList();
+                    }
+                    break;
+                case (int)ColumnType.Name:
+                    {
+                        assetList = isAscend ? assetList.OrderBy(v => v.name).ToList() :
+                                               assetList.OrderByDescending(v => v.name).ToList();
+                    }
+                    break;
+                case (int)ColumnType.Path:
+                    {
+                        assetList = isAscend ? assetList.OrderBy(v => v.RelativePath).ToList() :
+                                               assetList.OrderByDescending(v => v.RelativePath).ToList();
+                    }
+                    break;
+                case (int)ColumnType.Size:
+                    {
+                        Comparison<AssetTreeElement> sortFunc = (l, r) =>
+                        {
+                            var dic = AssetSerializeInfo.Inst.guidToAsset;
+                            dic.TryGetValue(l.Guid, out AssetTreeElement le);
+                            dic.TryGetValue(r.Guid, out AssetTreeElement re);
+                            long leftSize = le != null ? le.Size : 0;
+                            long rightSize = re != null ? re.Size : 0;
+                            return isAscend ? leftSize.CompareTo(rightSize) : -leftSize.CompareTo(rightSize);
+                        };
+
+                        assetList.Sort(sortFunc);
+                    }
+                    break;
+                case (int)ColumnType.Ref:
+                    {
+                        Comparison<AssetTreeElement> sortFunc = (l, r) =>
+                        {
+                            var dic = AssetSerializeInfo.Inst.guidToRef;
+                            int lVal = dic.TryGetValue(l.Guid, out List<string> lr) ? lr.Count : 0;
+                            int rVal = dic.TryGetValue(r.Guid, out List<string> rr) ? rr.Count : 0;
+                            return isAscend ? lVal.CompareTo(rVal) : -lVal.CompareTo(rVal);
+                        };
+
+                        assetList.Sort(sortFunc);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            List<AssetTreeElement> newList = new List<AssetTreeElement>();
+            newList.Add(root);
+            for (int i = 0; i < assetList.Count; i++)
+                RebuildList(assetList[i], newList);
+
+            assetList = newList;
+            RefreshTreeView(assetList);
+        }
+
+        /// <summary>
+        /// rebuild list.if you has all parent element, you can use this to build all list.
+        /// </summary>
+        public void RebuildList(AssetTreeElement element, List<AssetTreeElement> newList)
+        {
+            newList.Add(element);
+            if (!element.hasChildren)
+                return;
+
+            for (int i = 0; i < element.children.Count; i++)
+            {
+                AssetTreeElement assetElement = element.children[i] as AssetTreeElement;
+                RebuildList(assetElement, newList);
+            }
+        }
 
         /// <summary>
         /// refresh tree view. 
