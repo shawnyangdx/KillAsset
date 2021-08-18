@@ -38,6 +38,7 @@ namespace KA
         public class GUIOptions
         {
             public bool showSearchField = true;
+            public bool showExport = true;
 
             public OnCustomGUI onTopGUICallback;
             public OnCustomGUI onBottomGUICallback;
@@ -51,6 +52,14 @@ namespace KA
         /// gui options.you can override this property to custom your specific gui.
         /// </summary>
         internal virtual GUIOptions GuiOptions { get; } = new GUIOptions();
+
+        /// <summary>
+        /// export btn logic.to export target file from Config.
+        /// </summary>
+        internal virtual void Export()
+        {
+            AssetSerializeInfo.Inst.Export(TreeView.treeModel.Data as List<AssetTreeElement>, GetType().Name);
+        }
 
         /// <summary>
         /// search filter.

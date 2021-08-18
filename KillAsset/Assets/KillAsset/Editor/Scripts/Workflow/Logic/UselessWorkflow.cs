@@ -67,6 +67,15 @@ namespace KA
             return true;
         }
 
+        internal override void Export()
+        {
+            for (int i = 0; i < Enum.GetNames(typeof(AssetShowMode)).Length; i++)
+            {
+                var assetList = GetAssetList(i);
+                AssetSerializeInfo.Inst.Export(assetList, ((AssetShowMode)i).ToString());
+            }
+        }
+
         private List<AssetTreeElement> GetAssetList(int targetSelected = -1)
         {
             int toolbarSelectIndex = _toolbarSelected;
@@ -164,18 +173,8 @@ namespace KA
                     _treeView.treeModel.Clear();
             }
 
-            topRect.x = rect.width + 15;
-            topRect.width = 100;
-            if (GUI.Button(topRect, "Export"))
-            {
-                for (int i = 0; i < Enum.GetNames(typeof(AssetShowMode)).Length; i++)
-                {
-                    var assetList = GetAssetList(i);
-                    AssetSerializeInfo.Inst.Export(assetList, ((AssetShowMode)i).ToString());
-                }
-            }
-
-            rect.y += 25;
+            if (!GuiOptions.showExport)
+                rect.y += 25;
             rect.height -= 25;
 
             if(_treeView != null && _treeView.treeModel.numberOfDataElements > 0)

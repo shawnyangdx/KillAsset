@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace KA
 {
-    [WorkflowOverride("Incorrect Path")]
+    [WorkflowOverride("Check Path")]
     public class IncorrectPathWorkflow : AssetWorkflow
     {
         static string ChineseRegex = @"[\u4e00-\u9fa5]";

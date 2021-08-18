@@ -58,6 +58,17 @@ namespace KA
             }
 
             var baseRect = GetBaseRect();
+            if (_lastWorkflow.GuiOptions.showExport)
+            {
+                var rect = baseRect;
+                rect.x = baseRect.width + 15;
+                rect.width = 100f;
+                rect.height = 20f;
+                baseRect.y += 25;
+                if (GUI.Button(rect, "Export"))
+                    _lastWorkflow.Export();
+            }
+
             _lastWorkflow.GuiOptions.onTopGUICallback?.Invoke(ref baseRect);
 
             if (_lastWorkflow.GuiOptions.showSearchField)
