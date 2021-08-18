@@ -1,6 +1,12 @@
 ## KillAsset Change log
  All notable changes to this project will be documented in this file.
 
+**[0.1.2]** *2021-08-18*
+
+*Change:*
+- 将Export按钮作为GUI配置项
+- 更改workflow命名
+
 **[0.1.1]** *2021-07-24*
 
 *Add:*
