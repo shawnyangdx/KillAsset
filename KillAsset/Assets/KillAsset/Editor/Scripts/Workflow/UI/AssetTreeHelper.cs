@@ -36,6 +36,9 @@ namespace KA
 
             for (int i = 0; i < depends.Length; i++)
             {
+                if (string.IsNullOrEmpty(depends[i]))
+                    continue;
+
                 depends[i] = depends[i].NormalizePath();
                 if (IgnoreExtension(depends[i]))
                     continue;
@@ -238,6 +241,9 @@ namespace KA
 
         static bool FindCheckList(List<string> checkList, string path)
         {
+            if (string.IsNullOrEmpty(path))
+                return false;
+
             if (checkList != null)
             {
                 if (checkList.Contains(path))

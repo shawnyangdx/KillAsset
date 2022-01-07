@@ -38,18 +38,37 @@ namespace KA
         void BuildGenerticMemu(TreeViewItem<AssetTreeElement> item)
         {
             GenericMenu menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Copy Path"), false, () =>
-            {
-                EditorGUIUtility.systemCopyBuffer = item.data.Path;
-            });
-            menu.AddSeparator("");
+     
 
             if (SelectionObjects.Count > 0)
             {
                 if (SelectionObjects.Count == 1)
+                {
+                    menu.AddItem(new GUIContent("Copy Path"), false, () =>
+                    {
+                        EditorGUIUtility.systemCopyBuffer = item.data.Path;
+                    });
+                    menu.AddSeparator("");
+
                     menu.AddItem(new GUIContent("Show In Explorer"), false, () => EditorUtility.RevealInFinder(SelectionObjects[0].Path));
+                }
                 else
+                {
+                    menu.AddItem(new GUIContent("Copy All Path"), false, () =>
+                    {
+                        List<string> pathList = SelectionObjects.ConvertAll(v => v.Path);
+                        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                        for (int i = 0; i < pathList.Count; i++)
+                        {
+                            sb.Append(pathList[i]);
+                            sb.Append("\n");
+                        }
+
+                        EditorGUIUtility.systemCopyBuffer = sb.ToString();
+                    });
+
                     menu.AddDisabledItem(new GUIContent("Show In Explorer"));
+                }
             }
 
             menu.ShowAsContext();

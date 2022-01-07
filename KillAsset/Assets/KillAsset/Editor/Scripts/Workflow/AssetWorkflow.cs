@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEditor;
 
 namespace KA
 {
@@ -181,6 +181,16 @@ namespace KA
             List<AssetTreeElement> assetList = new List<AssetTreeElement>();
             AssetTreeHelper.ListToTree(pathList, assetList);
             RefreshTreeView(assetList);
+        }
+
+        protected void ShowProgressBar(string title, string message, float progress)
+        {
+            EditorUtility.DisplayProgressBar(title, string.Format("{0}:{1}", this.GetType().Name, message), progress);
+        }
+
+        protected void ClearProgressBar()
+        {
+            EditorUtility.ClearProgressBar();
         }
 
         #region priviate
