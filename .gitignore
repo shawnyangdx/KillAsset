@@ -3,6 +3,10 @@ obj/
 Temp/
 Logs/
 Library/
-*.meta
 *.csproj
 *.sln
+Test/
+KillAsset/Assets/Resources.meta
+KillAsset/Assets/Test.meta
+KillAsset/Assets/KillAsset/CHANGELOG.md.meta
+KillAsset/.vsconfig
