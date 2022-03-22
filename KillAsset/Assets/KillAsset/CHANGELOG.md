@@ -1,6 +1,19 @@
 ## KillAsset Change log
  All notable changes to this project will be documented in this file.
 
+**[0.1.4]** *2022-03-22*
+
+*Change:*
+- 增加分析资源进度条
+- 支持多选拷贝路径
+
+**[0.1.3]** *2021-09-03*
+
+*Change:*
+- 优化解析资源速度
+- 更改workflow命名
+- 
+
 **[0.1.2]** *2021-08-18*
 
 *Change:*
