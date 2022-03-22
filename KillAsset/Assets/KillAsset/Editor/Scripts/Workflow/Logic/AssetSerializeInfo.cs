@@ -136,6 +136,8 @@ namespace KA
                 guidRefSet.Clear();
                 if (AssetTreeHelper.TryGetDependencies(path, checkList, out List<string> depends))
                 {
+                    AssetTreeHelper.onCollectDependencies?.Invoke(path, (float)i / AllAssetPaths.Count);
+
                     AssetTreeElement element = AssetTreeHelper.CreateAssetElement(path, 0);
                     AddDependenceItem(element);
                     AssetTreeHelper.CollectAssetDependencies(path, depends, element.depth + 1, checkList);

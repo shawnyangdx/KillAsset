@@ -10,7 +10,7 @@ namespace KA
 {
     public class AssetTreeHelper
     {
-        public static Action<string, int> onCollectDependencies;
+        public static Action<string, float> onCollectDependencies;
 
         public static int BuildID { get; internal set; } = 0;
 

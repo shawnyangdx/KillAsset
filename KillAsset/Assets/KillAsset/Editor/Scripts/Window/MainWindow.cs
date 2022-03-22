@@ -157,6 +157,9 @@ namespace KA
                         }
                     }
                     p.ToggleState = toggleState;
+
+                    //clear progress bar
+                    EditorUtility.ClearProgressBar();
                 }
             }
             GUI.EndScrollView();
@@ -279,12 +282,9 @@ namespace KA
             _workflowes.Sort((a, b) => b.SortIndex - a.SortIndex);
         }
 
-        private void OnCollectDependenies(string path, int depth)
+        private void OnCollectDependenies(string path, float progress)
         {
-            if(depth == 0)
-            {
-                EditorUtility.DisplayProgressBar("Analyze...", path, 0);
-            }
+            EditorUtility.DisplayProgressBar("Analyze...", path, progress);
         }
 
         private void OnSortingChanged(MultiColumnHeader multiColumnHeader)

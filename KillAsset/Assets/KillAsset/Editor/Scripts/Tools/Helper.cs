@@ -9,7 +9,7 @@ namespace KA
 {
     public static class Helper
     {
-        public static string Version = "0.1.2";
+        public static string Version = "0.1.3";
 
         public class Color
         {
